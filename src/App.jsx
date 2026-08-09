@@ -15,6 +15,7 @@ import OnboardingWorkflows from './pages/OnboardingWorkflows';
 import JobAnalytics from './pages/JobAnalytics';
 import Settings from './pages/Settings';
 import TeamManagement from './pages/TeamManagement';
+import Integrations from './pages/Integrations';
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
           <Route path="onboarding/workflows" element={<OnboardingWorkflows />} />
           <Route path="settings" element={<Settings />} />
           <Route path="settings/team" element={<TeamManagement />} />
+          <Route path="settings/integrations" element={<Integrations />} />
         </Route>
       </Routes>
     </Router>

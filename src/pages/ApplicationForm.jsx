@@ -39,8 +39,7 @@ const ApplicationForm = () => {
       // Log the application attempt
       logEvent('application_submitted', { jobId: id, emailDomain: formData.email.split('@')[1] });
 
-      // Immediate visual feedback to user
-      setIsSubmitted(true);
+
 
       // Clean JSON payload for Temporal
       const temporalPayload = {
@@ -56,31 +55,26 @@ const ApplicationForm = () => {
         }
       };
 
-      if (supabase) {
-        try {
-          // Send background data to supabase
-          const { error } = await supabase.from('onboard1_candidates').insert([{
-            name: temporalPayload.candidateData.name,
-            email: temporalPayload.candidateEmail,
-            phone: temporalPayload.candidateData.phone,
-            linkedin: temporalPayload.candidateData.linkedin,
-            portfolio: temporalPayload.candidateData.portfolio,
-            job_id: temporalPayload.jobId,
-            stage: temporalPayload.candidateData.stage,
-            applied: temporalPayload.candidateData.applied
-          }]);
+      try {
+        const response = await fetch('/api/apply', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(temporalPayload)
+        });
 
-          if (error) {
-            console.error("Error inserting candidate in background:", error);
-            // Even if it fails, the user is already on the success screen
-            // The Temporal workflow will pick up from here in the future
-          }
-        } catch (error) {
-          console.error("Error connecting to database:", error);
+        if (!response.ok) {
+          throw new Error('Failed to submit application to edge API');
         }
-      }
 
-      setTimeout(() => navigate('/jobs'), 3000);
+        // Immediate visual feedback to user on success
+        setIsSubmitted(true);
+        setTimeout(() => navigate('/jobs'), 3000);
+      } catch (error) {
+        console.error("Error submitting application:", error);
+        setSubmitError("There was an issue submitting your application. Please try again.");
+      }
     }
   };
 

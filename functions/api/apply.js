@@ -1,3 +1,6 @@
+import { createClient } from '@supabase/supabase-js';
+import { issueMagicLinkToken } from '../utils/auth.js';
+
 export async function onRequestOptions(context) {
   const request = context.request;
   const origin = request.headers.get("Origin");
@@ -31,6 +34,7 @@ export async function onRequestPost(context) {
   try {
     const request = context.request;
     const origin = request.headers.get("Origin");
+    const env = context.env;
 
     let allowedOrigin = "*";
 
@@ -82,13 +86,50 @@ export async function onRequestPost(context) {
       });
     }
 
-    // Here we would normally signal Temporal or insert into Supabase
+    // Initialize Supabase Client
+    if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) {
+      return new Response(JSON.stringify({ error: "Internal Server Error", message: "Supabase credentials are not configured" }), {
+        status: 500,
+        headers
+      });
+    }
+    const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_KEY);
+
+    // Insert candidate into onboard1_candidates table
+    const { data: candidate, error: dbError } = await supabase
+      .from('onboard1_candidates')
+      .insert({
+        job_id: payload.jobId,
+        email: payload.candidateEmail,
+        name: payload.candidateData.name,
+        phone: payload.candidateData.phone || null,
+        linkedin: payload.candidateData.linkedin || null,
+        portfolio: payload.candidateData.portfolio || null,
+        status: 'applied'
+      })
+      .select('id')
+      .single();
+
+    if (dbError) {
+      console.error("Supabase insert error:", dbError);
+      return new Response(JSON.stringify({ error: "Failed to save application data" }), {
+        status: 500,
+        headers
+      });
+    }
+
+    // Issue JWT magic link token
+    const jwtSecret = env.JWT_SECRET || 'default-secret-key-for-development';
+    const magicLinkToken = await issueMagicLinkToken(candidate.id, jwtSecret);
+    console.log("Magic link token generated successfully");
+
     // Returning success
-    return new Response(JSON.stringify({ success: true, message: "Application received successfully" }), {
+    return new Response(JSON.stringify({ success: true, message: "Application received successfully", token: magicLinkToken }), {
       status: 200,
       headers
     });
   } catch (error) {
+    console.error("Internal server error:", error);
     return new Response(JSON.stringify({ error: "Internal Server Error", message: error.message }), {
       status: 500,
       headers: {

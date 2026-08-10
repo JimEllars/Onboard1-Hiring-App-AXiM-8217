@@ -70,7 +70,6 @@ const ApplicationForm = () => {
 
         // Immediate visual feedback to user on success
         setIsSubmitted(true);
-        setTimeout(() => navigate('/jobs'), 3000);
       } catch (error) {
         console.error("Error submitting application:", error);
         setSubmitError("There was an issue submitting your application. Please try again.");
@@ -188,20 +187,20 @@ const ApplicationForm = () => {
                 animate={{ opacity: 1, scale: 1 }}
                 className="p-16 text-center"
               >
-                <div className="w-24 h-24 bg-emerald-100 text-emerald-600 rounded-[32px] flex items-center justify-center mx-auto mb-8 shadow-xl shadow-emerald-50">
-                  <SafeIcon icon={FiCheck} className="text-5xl" />
+                <div className="w-24 h-24 bg-blue-100 text-blue-600 rounded-[32px] flex items-center justify-center mx-auto mb-8 shadow-xl shadow-blue-50">
+                  <SafeIcon icon={FiMail} className="text-5xl" />
                 </div>
-                <h2 className="text-4xl font-black text-slate-900 mb-4 tracking-tight">Application Sent!</h2>
+                <h2 className="text-4xl font-black text-slate-900 mb-4 tracking-tight">Check Your Email</h2>
                 <p className="text-lg text-slate-500 font-medium mb-10 leading-relaxed">
-                  Thanks for applying, {formData.name.split(' ')[0] || 'there'}! We've received your application and our team will be in touch within 48 hours.
+                  Thanks for applying, {formData.name.split(' ')[0] || 'there'}! A secure verification link has been sent to your inbox. Please click the link to continue the process.
                 </p>
                 <div className="p-6 bg-slate-50 rounded-[28px] border border-slate-100 flex items-center gap-4 text-left max-w-sm mx-auto">
                   <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-blue-600 shrink-0">
-                    <SafeIcon icon={FiFileText} />
+                    <SafeIcon icon={FiMail} />
                   </div>
                   <div>
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Next Step</p>
-                    <p className="text-sm font-bold text-slate-900">Email Confirmation & Task</p>
+                    <p className="text-sm font-bold text-slate-900">Verify Email</p>
                   </div>
                 </div>
               </motion.div>

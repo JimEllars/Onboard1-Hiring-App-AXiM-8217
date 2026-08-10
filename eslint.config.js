@@ -4,7 +4,7 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 
 export default [
-  { ignores: ['dist'] },
+  { ignores: ['dist', '.wrangler'] },
   js.configs.recommended,
   {
     files: ['**/*.{js,jsx}'],
@@ -12,6 +12,11 @@ export default [
       ecmaVersion: 2020,
       globals: {
         ...globals.browser,
+        Response: true,
+        Request: true,
+        URL: true,
+        fetch: true,
+        console: true,
         ...globals.node,
         React: true,
         JSX: true

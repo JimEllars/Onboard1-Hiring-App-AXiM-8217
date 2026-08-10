@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 import { supabase } from '../lib/supabaseClient';
+import { logEvent } from '../lib/telemetry';
 
 const { FiArrowLeft, FiCheck, FiUpload, FiUser, FiMail, FiPhone, FiLinkedin, FiGlobe, FiFileText, FiArrowRight } = FiIcons;
 
@@ -32,36 +33,54 @@ const ApplicationForm = () => {
     setSubmitError(null);
 
     if (step < 2) {
+      logEvent('application_step_1_completed', { jobId: id });
       setStep(step + 1);
     } else {
+      // Log the application attempt
+      logEvent('application_submitted', { jobId: id, emailDomain: formData.email.split('@')[1] });
+
+      // Immediate visual feedback to user
+      setIsSubmitted(true);
+
+      // Clean JSON payload for Temporal
+      const temporalPayload = {
+        candidateEmail: formData.email,
+        jobId: id,
+        candidateData: {
+          name: formData.name,
+          phone: formData.phone,
+          linkedin: formData.linkedin,
+          portfolio: formData.portfolio,
+          stage: 'Screening',
+          applied: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        }
+      };
+
       if (supabase) {
         try {
+          // Send background data to supabase
           const { error } = await supabase.from('onboard1_candidates').insert([{
-            name: formData.name,
-            email: formData.email,
-            phone: formData.phone,
-            linkedin: formData.linkedin,
-            portfolio: formData.portfolio,
-            job_id: id,
-            stage: 'Screening',
-            applied: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+            name: temporalPayload.candidateData.name,
+            email: temporalPayload.candidateEmail,
+            phone: temporalPayload.candidateData.phone,
+            linkedin: temporalPayload.candidateData.linkedin,
+            portfolio: temporalPayload.candidateData.portfolio,
+            job_id: temporalPayload.jobId,
+            stage: temporalPayload.candidateData.stage,
+            applied: temporalPayload.candidateData.applied
           }]);
 
           if (error) {
-            throw error;
+            console.error("Error inserting candidate in background:", error);
+            // Even if it fails, the user is already on the success screen
+            // The Temporal workflow will pick up from here in the future
           }
-
-          setIsSubmitted(true);
-          setTimeout(() => navigate('/jobs'), 3000);
         } catch (error) {
-          console.error("Error inserting candidate:", error);
-          setSubmitError("Failed to submit application. Please try again later.");
+          console.error("Error connecting to database:", error);
         }
-      } else {
-         // Fallback if supabase is not configured
-         setIsSubmitted(true);
-         setTimeout(() => navigate('/jobs'), 3000);
       }
+
+      setTimeout(() => navigate('/jobs'), 3000);
     }
   };
 

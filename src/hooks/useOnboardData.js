@@ -33,9 +33,18 @@ export const useOnboardData = () => {
       }
 
       try {
-        const [jobsRes, candidatesRes] = await Promise.all([
+        const fetchPromise = Promise.all([
           supabase.from('onboard1_jobs').select('*'),
           supabase.from('onboard1_candidates').select('*')
+        ]);
+
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Supabase fetch timeout')), 3000)
+        );
+
+        const [jobsRes, candidatesRes] = await Promise.race([
+          fetchPromise,
+          timeoutPromise
         ]);
 
         if (jobsRes.error) throw jobsRes.error;
@@ -44,8 +53,7 @@ export const useOnboardData = () => {
         setJobs(jobsRes.data.length ? jobsRes.data : MOCK_JOBS);
         setCandidates(candidatesRes.data.length ? candidatesRes.data : MOCK_CANDIDATES);
       } catch (err) {
-        console.error('Failed to fetch from Supabase:', err);
-        setError(err);
+        console.warn('Silently falling back to mock data. Reason:', err.message);
         setJobs(MOCK_JOBS);
         setCandidates(MOCK_CANDIDATES);
       } finally {

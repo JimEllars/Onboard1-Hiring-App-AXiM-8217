@@ -1,11 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import * as FiIcons from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import SafeIcon from '../common/SafeIcon';
 
-const { FiSearch, FiBell, FiMenu, FiCheck, FiClock, FiAlertCircle, FiX } = FiIcons;
+const { FiSearch, FiBell, FiMenu, FiCheck, FiClock, FiX } = FiIcons;
 
 const Topbar = ({ title, toggleSidebar }) => {
+  const navigate = useNavigate();
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationRef = useRef(null);
 
@@ -52,7 +54,7 @@ const Topbar = ({ title, toggleSidebar }) => {
             <SafeIcon icon={FiBell} className="text-xl" />
             <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
           </button>
-
+          
           <AnimatePresence>
             {showNotifications && (
               <motion.div 
@@ -68,10 +70,7 @@ const Topbar = ({ title, toggleSidebar }) => {
                 <div className="max-h-[400px] overflow-y-auto">
                   {notifications.map((n) => (
                     <div key={n.id} className="p-4 hover:bg-slate-50 transition-colors flex gap-4 cursor-pointer border-b border-slate-50 last:border-0">
-                      <div className={`w-10 h-10 rounded-xl shrink-0 flex items-center justify-center ${
-                        n.type === 'success' ? 'bg-emerald-50 text-emerald-600' : 
-                        n.type === 'warning' ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600'
-                      }`}>
+                      <div className={`w-10 h-10 rounded-xl shrink-0 flex items-center justify-center ${n.type === 'success' ? 'bg-emerald-50 text-emerald-600' : n.type === 'warning' ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600'}`}>
                         <SafeIcon icon={n.icon} />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -82,23 +81,21 @@ const Topbar = ({ title, toggleSidebar }) => {
                     </div>
                   ))}
                 </div>
-                <div className="p-3 bg-slate-50 text-center border-t border-slate-100">
-                  <button className="text-xs font-bold text-slate-600 hover:text-slate-900">View All Activity</button>
-                </div>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
 
-        <div className="flex items-center gap-3 border-l border-gray-200 pl-6 cursor-pointer group">
-          <img 
-            src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" 
-            alt="User profile" 
-            className="w-9 h-9 rounded-full object-cover border-2 border-gray-100 shadow-sm group-hover:border-blue-200 transition-all" 
-          />
+        <div 
+          onClick={() => navigate('/portal/profile')}
+          className="flex items-center gap-3 border-l border-gray-200 pl-6 cursor-pointer group"
+        >
+          <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black text-sm shadow-md shadow-blue-200 group-hover:scale-105 transition-transform">
+            01
+          </div>
           <div className="hidden md:block">
-            <p className="text-sm font-bold text-gray-700 group-hover:text-blue-600 transition-colors">Sarah Jenkins</p>
-            <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">HR Director</p>
+            <p className="text-sm font-bold text-gray-700 group-hover:text-blue-600 transition-colors">Onboard</p>
+            <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">HR Suite Manager</p>
           </div>
         </div>
       </div>

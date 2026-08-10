@@ -1,184 +1,223 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
+import { useOnboardData } from '../hooks/useOnboardData';
 
-const { FiSearch, FiFilter, FiDownload, FiStar, FiMail, FiX, FiFile, FiPhone, FiLinkedin, FiExternalLink, FiGrid, FiList, FiEdit, FiBarChart2, FiActivity } = FiIcons;
+const { FiSearch, FiFilter, FiDownload, FiStar, FiMail, FiX, FiFile, FiPhone, FiExternalLink, FiGrid, FiList, FiEdit, FiBarChart2, FiActivity, FiChevronRight } = FiIcons;
 
-const candidatesData = [
-  { id: 1, name: 'Eleanor Pena', role: 'UX/UI Designer', stage: 'Interview', rating: 4, applied: 'Oct 24, 2023', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80', email: 'eleanor.pena@example.com', phone: '+1 (555) 012-3456' },
-  { id: 2, name: 'Cody Fisher', role: 'Senior Frontend Engineer', stage: 'Screening', rating: 3, applied: 'Oct 23, 2023', avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80', email: 'cody.fisher@example.com', phone: '+1 (555) 987-6543' },
-  { id: 3, name: 'Esther Howard', role: 'Product Marketing Manager', stage: 'Offer', rating: 5, applied: 'Oct 20, 2023', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80', email: 'esther.howard@example.com', phone: '+1 (555) 123-4567' },
-  { id: 4, name: 'Cameron Williamson', role: 'Data Scientist', stage: 'Technical Task', rating: 4, applied: 'Oct 18, 2023', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80', email: 'cameron.w@example.com', phone: '+1 (555) 444-5555' },
-];
+const stages = ['Screening', 'Technical Task', 'Interview', 'Offer', 'Hired'];
 
-const stages = ['Screening', 'Technical Task', 'Interview', 'Offer'];
-
-const CandidateDetails = ({ candidate, onClose, onEvaluate, onViewScores, onViewProgress }) => {
+const CandidateDetails = ({ candidate, onClose, onEvaluate, onViewScores, onViewProgress, onMoveStage }) => {
   if (!candidate) return null;
+
+  const nextStage = stages[stages.indexOf(candidate.stage) + 1];
+
   return (
-    <motion.div initial={{ opacity: 0, x: 400 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 400 }} className="fixed inset-y-0 right-0 w-full max-w-xl bg-white shadow-2xl z-50 overflow-y-auto border-l border-slate-200" >
-      <div className="sticky top-0 bg-white border-b border-slate-100 p-6 flex justify-between items-center z-10">
-        <h2 className="text-xl font-bold text-slate-900">Candidate Profile</h2>
-        <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors"> <SafeIcon icon={FiX} className="text-xl" /> </button>
+    <motion.div 
+      initial={{ opacity: 0, x: 400 }} 
+      animate={{ opacity: 1, x: 0 }} 
+      exit={{ opacity: 0, x: 400 }} 
+      className="fixed inset-y-0 right-0 w-full max-w-xl bg-white shadow-2xl z-50 overflow-y-auto border-l border-slate-200"
+    >
+      <div className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-slate-100 p-6 flex justify-between items-center z-10">
+        <h2 className="text-xl font-black text-slate-900 tracking-tight">Candidate Profile</h2>
+        <button onClick={onClose} className="p-3 hover:bg-slate-100 rounded-2xl transition-all">
+          <SafeIcon icon={FiX} className="text-xl text-slate-400" />
+        </button>
       </div>
-      <div className="p-8">
-        <div className="flex items-center gap-6 mb-8">
-          <img src={candidate.avatar} className="w-24 h-24 rounded-2xl object-cover border-4 border-slate-50" />
+
+      <div className="p-10">
+        <div className="flex items-center gap-8 mb-10">
+          <img src={candidate.avatar} className="w-28 h-28 rounded-[32px] object-cover border-4 border-slate-50 shadow-lg" />
           <div>
-            <h3 className="text-2xl font-bold text-slate-900">{candidate.name}</h3>
-            <p className="text-lg font-medium text-slate-600">{candidate.role}</p>
-            <div className="flex items-center gap-2 mt-2">
-              <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-bold uppercase tracking-wider">{candidate.stage}</span>
-              <div className="flex text-amber-400 ml-2"> {[...Array(5)].map((_, i) => ( <SafeIcon key={i} icon={FiStar} className={i < candidate.rating ? "fill-current" : "text-gray-200"} /> ))} </div>
+            <h3 className="text-3xl font-black text-slate-900 tracking-tight">{candidate.name}</h3>
+            <p className="text-lg font-bold text-slate-500">{candidate.role}</p>
+            <div className="flex items-center gap-3 mt-4">
+              <span className="px-4 py-1.5 bg-blue-50 text-blue-700 rounded-xl text-[10px] font-black uppercase tracking-widest border border-blue-100">
+                {candidate.stage}
+              </span>
+              <div className="flex text-amber-400 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-100 items-center gap-1">
+                <SafeIcon icon={FiStar} className="fill-current text-[10px]" />
+                <span className="text-[10px] font-black">{candidate.rating}.0</span>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-3 mb-8">
-          <button 
-            onClick={() => onViewProgress(candidate.id)}
-            className="flex flex-col items-center justify-center p-4 bg-slate-50 border border-slate-200 rounded-2xl hover:bg-slate-100 transition-colors group"
-          >
-            <SafeIcon icon={FiActivity} className="text-xl text-slate-600 mb-1 group-hover:scale-110 transition-transform" />
-            <span className="text-[10px] font-bold text-slate-700">Track Progress</span>
-          </button>
-          <button 
-            onClick={() => onViewScores(candidate.id)}
-            className="flex flex-col items-center justify-center p-4 bg-indigo-50 border border-indigo-100 rounded-2xl hover:bg-indigo-100 transition-colors group"
-          >
-            <SafeIcon icon={FiBarChart2} className="text-xl text-indigo-600 mb-1 group-hover:scale-110 transition-transform" />
-            <span className="text-[10px] font-bold text-indigo-700">View Scores</span>
-          </button>
-          <button 
-            onClick={() => onEvaluate(candidate.id)}
-            className="flex flex-col items-center justify-center p-4 bg-blue-50 border border-blue-100 rounded-2xl hover:bg-blue-100 transition-colors group"
-          >
-            <SafeIcon icon={FiEdit} className="text-xl text-blue-600 mb-1 group-hover:scale-110 transition-transform" />
-            <span className="text-[10px] font-bold text-blue-700">Evaluation</span>
-          </button>
+        <div className="grid grid-cols-3 gap-4 mb-10">
+          {[
+            { id: 'progress', icon: FiActivity, label: 'Timeline', onClick: () => onViewProgress(candidate.id), color: 'bg-slate-50 text-slate-700 hover:bg-slate-100' },
+            { id: 'scores', icon: FiBarChart2, label: 'Scores', onClick: () => onViewScores(candidate.id), color: 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100' },
+            { id: 'evaluate', icon: FiEdit, label: 'Evaluate', onClick: () => onEvaluate(candidate.id), color: 'bg-blue-50 text-blue-700 hover:bg-blue-100' },
+          ].map(btn => (
+            <button key={btn.id} onClick={btn.onClick} className={`flex flex-col items-center justify-center p-5 rounded-[24px] border border-transparent transition-all group ${btn.color}`}>
+              <SafeIcon icon={btn.icon} className="text-xl mb-2 group-hover:scale-110 transition-transform" />
+              <span className="text-[10px] font-black uppercase tracking-widest">{btn.label}</span>
+            </button>
+          ))}
         </div>
 
-        <div className="grid grid-cols-2 gap-4 mb-8">
-          <div className="p-4 bg-slate-50 rounded-xl">
-            <p className="text-xs text-slate-500 uppercase font-bold mb-1">Email</p>
-            <p className="text-sm font-semibold text-slate-900 break-all">{candidate.email}</p>
-          </div>
-          <div className="p-4 bg-slate-50 rounded-xl">
-            <p className="text-xs text-slate-500 uppercase font-bold mb-1">Phone</p>
-            <p className="text-sm font-semibold text-slate-900">{candidate.phone}</p>
-          </div>
-        </div>
-
-        <div className="space-y-6">
+        <div className="space-y-8">
           <section>
-            <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">Documents</h4>
-            <div className="flex items-center justify-between p-4 border border-slate-200 rounded-xl hover:border-blue-300 transition-colors cursor-pointer group">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-red-50 text-red-600 rounded-lg flex items-center justify-center"> <SafeIcon icon={FiFile} /> </div>
-                <div> <p className="text-sm font-bold text-slate-900">Resume_Final_2023.pdf</p> <p className="text-xs text-slate-500">Updated Oct 24, 2023</p> </div>
+            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+              <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" /> Contact Information
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Email</p>
+                <p className="text-sm font-black text-slate-900 break-all">{candidate.email}</p>
               </div>
-              <SafeIcon icon={FiDownload} className="text-slate-400 group-hover:text-blue-600" />
+              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Phone</p>
+                <p className="text-sm font-black text-slate-900">{candidate.phone}</p>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+              <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full" /> Documents
+            </h4>
+            <div className="p-5 border border-slate-100 rounded-2xl hover:border-blue-500 transition-all cursor-pointer group bg-slate-50/50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-red-500">
+                    <SafeIcon icon={FiFile} className="text-xl" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-black text-slate-900">Resume_Final_2023.pdf</p>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase">Oct 24, 2023 • 1.2MB</p>
+                  </div>
+                </div>
+                <SafeIcon icon={FiDownload} className="text-slate-400 group-hover:text-blue-600 transition-colors" />
+              </div>
             </div>
           </section>
         </div>
-        <div className="sticky bottom-0 pt-8 pb-4 bg-white border-t border-slate-100 mt-8 flex gap-3">
-          <button className="flex-1 bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-slate-800 transition-colors">Move Stage</button>
-          <button className="px-4 py-3 bg-red-50 text-red-600 rounded-xl font-bold hover:bg-red-100 transition-colors">Reject</button>
+
+        <div className="sticky bottom-0 pt-10 pb-4 bg-white border-t border-slate-100 mt-10 flex gap-4">
+          <button 
+            disabled={!nextStage}
+            onClick={() => onMoveStage(candidate.id, nextStage)}
+            className="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-black text-sm hover:bg-blue-600 transition-all shadow-xl shadow-slate-200 disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            Move to {nextStage || 'End'} <SafeIcon icon={FiChevronRight} />
+          </button>
+          <button className="px-8 py-4 bg-rose-50 text-rose-600 rounded-2xl font-black text-sm hover:bg-rose-100 transition-all border border-rose-100">
+            Reject
+          </button>
         </div>
       </div>
     </motion.div>
   );
 };
 
-const KanbanView = ({ onCandidateClick }) => {
-  return (
-    <div className="flex gap-6 overflow-x-auto pb-6 scrollbar-hide">
-      {stages.map((stage) => (
-        <div key={stage} className="min-w-[300px] w-[300px] flex flex-col gap-4">
-          <div className="flex items-center justify-between px-2">
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-bold text-slate-900">{stage}</h3>
-              <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-bold rounded-full"> {candidatesData.filter(c => c.stage === stage).length} </span>
-            </div>
-            <button className="text-slate-400 hover:text-slate-600"><SafeIcon icon={FiIcons.FiPlus} /></button>
-          </div>
-          <div className="bg-slate-50/50 p-3 rounded-2xl border border-slate-100 min-h-[500px] space-y-3">
-            {candidatesData.filter(c => c.stage === stage).map((candidate) => (
-              <motion.div layoutId={`candidate-${candidate.id}`} key={candidate.id} onClick={() => onCandidateClick(candidate)} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-200 cursor-pointer transition-all group" >
-                <div className="flex items-center gap-3 mb-3">
-                  <img src={candidate.avatar} className="w-10 h-10 rounded-lg object-cover" />
-                  <div>
-                    <p className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors">{candidate.name}</p>
-                    <p className="text-[10px] text-slate-500 font-medium">{candidate.role}</p>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex text-amber-400 text-[10px]"> {[...Array(5)].map((_, i) => ( <SafeIcon key={i} icon={FiStar} className={i < candidate.rating ? "fill-current" : "text-slate-200"} /> ))} </div>
-                  <span className="text-[10px] text-slate-400 font-bold uppercase">{candidate.applied}</span>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-};
-
 const Candidates = () => {
+  const { candidates, updateCandidateStage } = useOnboardData();
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [viewMode, setViewMode] = useState('list');
+  const [search, setSearch] = useState('');
   const navigate = useNavigate();
 
+  const filteredCandidates = useMemo(() => {
+    return candidates.filter(c => 
+      c.name.toLowerCase().includes(search.toLowerCase()) || 
+      c.role.toLowerCase().includes(search.toLowerCase())
+    );
+  }, [candidates, search]);
+
+  const handleMoveStage = (id, stage) => {
+    updateCandidateStage(id, stage);
+    setSelectedCandidate(prev => ({ ...prev, stage }));
+  };
+
   return (
-    <div className="space-y-6 relative">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-        <div className="flex items-center gap-4 w-full sm:w-auto">
-          <div className="relative w-full sm:w-96">
-            <SafeIcon icon={FiSearch} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input type="text" placeholder="Search candidates..." className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-blue-500 transition-all outline-none" />
+    <div className="space-y-8 relative pb-20">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 bg-white p-6 rounded-[32px] shadow-sm border border-slate-100">
+        <div className="flex items-center gap-4 w-full lg:w-auto">
+          <div className="relative flex-1 lg:w-96">
+            <SafeIcon icon={FiSearch} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input 
+              type="text" 
+              placeholder="Search by name, role, or skill..." 
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-12 pr-6 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:bg-white focus:border-blue-500 transition-all outline-none" 
+            />
           </div>
-          <div className="flex bg-slate-100 p-1 rounded-xl">
-            <button onClick={() => setViewMode('list')} className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`} > <SafeIcon icon={FiList} /> </button>
-            <button onClick={() => setViewMode('kanban')} className={`p-2 rounded-lg transition-all ${viewMode === 'kanban' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`} > <SafeIcon icon={FiGrid} /> </button>
+          <div className="flex bg-slate-100 p-1.5 rounded-2xl">
+            <button onClick={() => setViewMode('list')} className={`p-2.5 rounded-xl transition-all ${viewMode === 'list' ? 'bg-white text-blue-600 shadow-md' : 'text-slate-500 hover:text-slate-700'}`}>
+              <SafeIcon icon={FiList} />
+            </button>
+            <button onClick={() => setViewMode('kanban')} className={`p-2.5 rounded-xl transition-all ${viewMode === 'kanban' ? 'bg-white text-blue-600 shadow-md' : 'text-slate-500 hover:text-slate-700'}`}>
+              <SafeIcon icon={FiGrid} />
+            </button>
           </div>
         </div>
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 border border-slate-200 rounded-xl text-slate-700 text-sm font-bold hover:bg-slate-50 transition-colors"> <SafeIcon icon={FiFilter} /> Filters </button>
-          <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"> Add Candidate </button>
+        <div className="flex items-center gap-4 w-full lg:w-auto">
+          <button className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-6 py-3.5 border border-slate-200 rounded-2xl text-slate-700 text-sm font-black hover:bg-slate-50 transition-all">
+            <SafeIcon icon={FiFilter} /> Filters
+          </button>
+          <button className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-8 py-3.5 bg-blue-600 text-white rounded-2xl text-sm font-black hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">
+            Add Candidate
+          </button>
         </div>
       </div>
+
       {viewMode === 'list' ? (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+        <div className="bg-white rounded-[40px] shadow-sm border border-slate-100 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-100">
-                  <th className="py-5 px-8 text-xs font-bold text-slate-500 uppercase tracking-widest">Candidate</th>
-                  <th className="py-5 px-8 text-xs font-bold text-slate-500 uppercase tracking-widest">Applied Role</th>
-                  <th className="py-5 px-8 text-xs font-bold text-slate-500 uppercase tracking-widest">Stage</th>
-                  <th className="py-5 px-8 text-xs font-bold text-slate-500 uppercase tracking-widest text-right">Actions</th>
+                <tr className="bg-slate-50/50 border-b border-slate-100">
+                  <th className="py-6 px-10 text-[10px] font-black text-slate-400 uppercase tracking-widest">Candidate</th>
+                  <th className="py-6 px-10 text-[10px] font-black text-slate-400 uppercase tracking-widest">Applied Role</th>
+                  <th className="py-6 px-10 text-[10px] font-black text-slate-400 uppercase tracking-widest">Stage</th>
+                  <th className="py-6 px-10 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
-                {candidatesData.map((candidate, index) => (
-                  <motion.tr initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }} key={candidate.id} onClick={() => setSelectedCandidate(candidate)} className="hover:bg-blue-50/30 transition-colors group cursor-pointer" >
-                    <td className="py-5 px-8">
-                      <div className="flex items-center gap-4">
-                        <img src={candidate.avatar} className="w-12 h-12 rounded-xl object-cover border border-slate-100" />
-                        <div> <p className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors">{candidate.name}</p> <p className="text-xs text-slate-500">{candidate.email}</p> </div>
+              <tbody className="divide-y divide-slate-50">
+                {filteredCandidates.map((candidate, index) => (
+                  <motion.tr 
+                    initial={{ opacity: 0, y: 10 }} 
+                    animate={{ opacity: 1, y: 0 }} 
+                    transition={{ delay: index * 0.05 }} 
+                    key={candidate.id} 
+                    onClick={() => setSelectedCandidate(candidate)}
+                    className="hover:bg-blue-50/30 transition-all group cursor-pointer"
+                  >
+                    <td className="py-6 px-10">
+                      <div className="flex items-center gap-5">
+                        <img src={candidate.avatar} className="w-14 h-14 rounded-2xl object-cover border border-slate-100 shadow-sm" />
+                        <div>
+                          <p className="text-sm font-black text-slate-900 group-hover:text-blue-600 transition-colors">{candidate.name}</p>
+                          <p className="text-xs text-slate-500 font-medium">{candidate.email}</p>
+                        </div>
                       </div>
                     </td>
-                    <td className="py-5 px-8 text-sm font-medium text-slate-700">{candidate.role}</td>
-                    <td className="py-5 px-8">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold ${candidate.stage === 'Offer' ? 'bg-emerald-100 text-emerald-800' : candidate.stage === 'Interview' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}> {candidate.stage} </span>
+                    <td className="py-6 px-10">
+                      <p className="text-sm font-bold text-slate-700">{candidate.role}</p>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">Applied {candidate.applied}</p>
                     </td>
-                    <td className="py-5 px-8 text-right">
-                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"> <SafeIcon icon={FiMail} /> </button>
-                        <button className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"> <SafeIcon icon={FiExternalLink} /> </button>
+                    <td className="py-6 px-10">
+                      <span className={`inline-flex items-center px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border ${
+                        candidate.stage === 'Offer' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 
+                        candidate.stage === 'Interview' ? 'bg-purple-50 text-purple-700 border-purple-100' : 
+                        'bg-blue-50 text-blue-700 border-blue-100'
+                      }`}>
+                        {candidate.stage}
+                      </span>
+                    </td>
+                    <td className="py-6 px-10 text-right">
+                      <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-all">
+                        <button className="p-3 text-slate-400 hover:text-blue-600 hover:bg-white rounded-xl shadow-sm transition-all">
+                          <SafeIcon icon={FiMail} />
+                        </button>
+                        <button className="p-3 text-slate-400 hover:text-blue-600 hover:bg-white rounded-xl shadow-sm transition-all">
+                          <SafeIcon icon={FiExternalLink} />
+                        </button>
                       </div>
                     </td>
                   </motion.tr>
@@ -188,18 +227,60 @@ const Candidates = () => {
           </div>
         </div>
       ) : (
-        <KanbanView onCandidateClick={setSelectedCandidate} />
+        <div className="flex gap-8 overflow-x-auto pb-10 scrollbar-hide px-2">
+          {stages.map((stage) => (
+            <div key={stage} className="min-w-[340px] w-[340px] flex flex-col gap-6">
+              <div className="flex items-center justify-between px-4">
+                <div className="flex items-center gap-3">
+                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">{stage}</h3>
+                  <span className="px-3 py-1 bg-slate-900 text-white text-[10px] font-black rounded-lg">
+                    {filteredCandidates.filter(c => c.stage === stage).length}
+                  </span>
+                </div>
+                <button className="text-slate-400 hover:text-slate-900 transition-colors"><SafeIcon icon={FiIcons.FiPlus} /></button>
+              </div>
+              <div className="bg-slate-50/50 p-4 rounded-[40px] border border-slate-100 min-h-[600px] space-y-4">
+                {filteredCandidates.filter(c => c.stage === stage).map((candidate) => (
+                  <motion.div 
+                    layoutId={`candidate-${candidate.id}`} 
+                    key={candidate.id} 
+                    onClick={() => setSelectedCandidate(candidate)}
+                    className="bg-white p-6 rounded-[32px] border border-slate-200 shadow-sm hover:shadow-xl hover:border-blue-500 cursor-pointer transition-all group"
+                  >
+                    <div className="flex items-center gap-4 mb-6">
+                      <img src={candidate.avatar} className="w-12 h-12 rounded-2xl object-cover shadow-sm" />
+                      <div>
+                        <p className="text-sm font-black text-slate-900 group-hover:text-blue-600 transition-colors">{candidate.name}</p>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">{candidate.role}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between pt-4 border-t border-slate-50">
+                      <div className="flex text-amber-400 text-[10px] gap-1">
+                        {[...Array(5)].map((_, i) => (
+                          <SafeIcon key={i} icon={FiStar} className={i < candidate.rating ? "fill-current" : "text-slate-100"} />
+                        ))}
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{candidate.applied}</span>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       )}
+
       <AnimatePresence>
         {selectedCandidate && (
           <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedCandidate(null)} className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40" />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedCandidate(null)} className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-40" />
             <CandidateDetails 
               candidate={selectedCandidate} 
               onClose={() => setSelectedCandidate(null)} 
-              onEvaluate={(id) => navigate(`/candidates/${id}/evaluate`)}
-              onViewScores={(id) => navigate(`/candidates/${id}/scores`)}
-              onViewProgress={(id) => navigate(`/candidates/${id}/progress`)}
+              onEvaluate={(id) => navigate(`/portal/candidates/${id}/evaluate`)} 
+              onViewScores={(id) => navigate(`/portal/candidates/${id}/scores`)} 
+              onViewProgress={(id) => navigate(`/portal/candidates/${id}/progress`)}
+              onMoveStage={handleMoveStage}
             />
           </>
         )}

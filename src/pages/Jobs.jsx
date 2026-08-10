@@ -3,106 +3,162 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
+import { useOnboardData } from '../hooks/useOnboardData';
 
-const { FiPlus, FiMapPin, FiClock, FiUsers, FiMoreVertical, FiX, FiCheck, FiChevronRight } = FiIcons;
+const { FiPlus, FiMapPin, FiClock, FiUsers, FiMoreVertical, FiX, FiCheck, FiChevronRight, FiBriefcase, FiDollarSign } = FiIcons;
 
-const jobsList = [
-  { id: 1, title: 'Senior Frontend Engineer', dept: 'Engineering', location: 'San Francisco, CA', type: 'Full-time', candidates: 45, status: 'Active' },
-  { id: 2, title: 'Product Marketing Manager', dept: 'Marketing', location: 'Remote', type: 'Full-time', candidates: 128, status: 'Active' },
-  { id: 3, title: 'UX/UI Designer', dept: 'Design', location: 'New York, NY', type: 'Contract', candidates: 89, status: 'Active' },
-];
-
-const CreateJobModal = ({ isOpen, onClose }) => {
+const CreateJobModal = ({ isOpen, onClose, onPublish }) => {
   const [step, setStep] = useState(1);
+  const [formData, setFormData] = useState({
+    title: '',
+    dept: 'Engineering',
+    location: 'Remote',
+    type: 'Full-time',
+    salary: '',
+    description: ''
+  });
+
   if (!isOpen) return null;
+
+  const handlePublish = () => {
+    onPublish(formData);
+    onClose();
+    setStep(1);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
-      <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }} className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl relative overflow-hidden" >
-        <div className="p-8 border-b border-slate-100 flex justify-between items-center">
+      <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }} className="bg-white w-full max-w-2xl rounded-[40px] shadow-2xl relative overflow-hidden" >
+        <div className="p-10 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
           <div>
-            <h2 className="text-2xl font-bold text-slate-900">Create New Position</h2>
-            <p className="text-slate-500 text-sm mt-1">Step {step} of 3: {step === 1 ? 'Basic Information' : step === 2 ? 'Job Description' : 'Hiring Team'}</p>
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight">Create New Position</h2>
+            <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">Step {step} of 3: {step === 1 ? 'Basics' : step === 2 ? 'Details' : 'Confirm'}</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+          <button onClick={onClose} className="p-3 hover:bg-white rounded-2xl transition-all shadow-sm">
             <SafeIcon icon={FiX} className="text-2xl text-slate-400" />
           </button>
         </div>
-        <div className="p-8 max-h-[70vh] overflow-y-auto">
+
+        <div className="p-10 max-h-[60vh] overflow-y-auto">
           {step === 1 && (
-            <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-6">
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-slate-700">Job Title</label>
-                  <input type="text" placeholder="e.g. Senior Product Designer" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 transition-colors" />
+            <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-8">
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Job Title</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. Senior Product Designer" 
+                      value={formData.title}
+                      onChange={(e) => setFormData({...formData, title: e.target.value})}
+                      className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-500 font-bold transition-all" 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Department</label>
+                    <select 
+                      value={formData.dept}
+                      onChange={(e) => setFormData({...formData, dept: e.target.value})}
+                      className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-500 font-bold transition-all"
+                    >
+                      <option>Engineering</option>
+                      <option>Design</option>
+                      <option>Marketing</option>
+                      <option>Sales</option>
+                    </select>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-slate-700">Department</label>
-                  <select className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 transition-colors">
-                    <option>Engineering</option>
-                    <option>Design</option>
-                    <option>Marketing</option>
-                    <option>Sales</option>
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-slate-700">Location</label>
-                  <input type="text" placeholder="e.g. Remote, USA" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 transition-colors" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-slate-700">Employment Type</label>
-                  <div className="flex gap-2">
-                    {['Full-time', 'Contract', 'Part-time'].map(type => (
-                      <button key={type} className="flex-1 py-3 text-xs font-bold rounded-xl border border-slate-200 hover:border-blue-500 hover:text-blue-600 transition-all">{type}</button>
-                    ))}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Location</label>
+                    <div className="relative">
+                      <SafeIcon icon={FiMapPin} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input 
+                        type="text" 
+                        placeholder="e.g. San Francisco, CA" 
+                        value={formData.location}
+                        onChange={(e) => setFormData({...formData, location: e.target.value})}
+                        className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-500 font-bold transition-all" 
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Salary Range</label>
+                    <div className="relative">
+                      <SafeIcon icon={FiDollarSign} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input 
+                        type="text" 
+                        placeholder="e.g. $120k - $160k" 
+                        value={formData.salary}
+                        onChange={(e) => setFormData({...formData, salary: e.target.value})}
+                        className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-500 font-bold transition-all" 
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
             </motion.div>
           )}
+
           {step === 2 && (
             <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-6">
               <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-700">About the Role</label>
-                <textarea rows="4" placeholder="Describe the responsibilities and daily tasks..." className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 transition-colors resize-none"></textarea>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Role Description</label>
+                <textarea 
+                  rows="6" 
+                  placeholder="Describe the mission, responsibilities, and impact of this role..." 
+                  value={formData.description}
+                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-500 font-bold transition-all resize-none"
+                ></textarea>
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-700">Key Requirements</label>
-                <div className="space-y-3">
-                  <div className="flex gap-2">
-                    <input type="text" placeholder="Add requirement..." className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 transition-colors" />
-                    <button className="bg-slate-900 text-white p-3 rounded-xl hover:bg-slate-800 transition-colors"><SafeIcon icon={FiPlus} /></button>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {['5+ years React', 'TypeScript', 'Node.js', 'System Design'].map(tag => (
-                      <span key={tag} className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold flex items-center gap-2">
-                        {tag} <SafeIcon icon={FiX} className="cursor-pointer" />
-                      </span>
-                    ))}
-                  </div>
-                </div>
+              <div className="grid grid-cols-3 gap-3">
+                {['Full-time', 'Contract', 'Part-time'].map(type => (
+                  <button 
+                    key={type} 
+                    onClick={() => setFormData({...formData, type})}
+                    className={`py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest border transition-all ${formData.type === type ? 'bg-slate-900 text-white border-slate-900 shadow-xl' : 'bg-slate-50 text-slate-500 border-slate-200 hover:border-blue-500'}`}
+                  >
+                    {type}
+                  </button>
+                ))}
               </div>
             </motion.div>
           )}
+
           {step === 3 && (
-            <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-8 text-center py-10">
-              <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                <SafeIcon icon={FiCheck} className="text-4xl" />
+            <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="text-center py-10">
+              <div className="w-24 h-24 bg-emerald-50 text-emerald-600 rounded-[32px] flex items-center justify-center mx-auto mb-8 shadow-xl shadow-emerald-50 border border-emerald-100">
+                <SafeIcon icon={FiCheck} className="text-5xl" />
               </div>
-              <div>
-                <h3 className="text-2xl font-bold text-slate-900">Ready to Publish?</h3>
-                <p className="text-slate-500 mt-2">The job will be posted to LinkedIn, Indeed, and your company career page automatically.</p>
+              <h3 className="text-3xl font-black text-slate-900 mb-4 tracking-tight">Ready to Go Live?</h3>
+              <p className="text-slate-500 font-medium max-w-sm mx-auto leading-relaxed">This position will be published to your Career Page and synced with LinkedIn & Indeed.</p>
+              <div className="mt-8 p-6 bg-slate-50 rounded-3xl border border-slate-100 text-left space-y-2">
+                <p className="text-lg font-black text-slate-900">{formData.title}</p>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{formData.dept} • {formData.location}</p>
               </div>
             </motion.div>
           )}
         </div>
-        <div className="p-8 border-t border-slate-100 bg-slate-50/50 flex justify-between items-center">
-          <button onClick={() => step > 1 && setStep(step - 1)} className={`px-6 py-3 font-bold text-slate-500 hover:text-slate-900 transition-colors ${step === 1 ? 'opacity-0 pointer-events-none' : ''}`} > Back </button>
+
+        <div className="p-10 border-t border-slate-100 bg-slate-50/50 flex justify-between items-center">
+          <button 
+            onClick={() => step > 1 && setStep(step - 1)} 
+            className={`px-8 py-4 font-black text-xs uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors ${step === 1 ? 'opacity-0 pointer-events-none' : ''}`}
+          >
+            Back
+          </button>
           <div className="flex gap-4">
-            <button onClick={onClose} className="px-6 py-3 font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors" > Cancel </button>
-            <button onClick={() => step < 3 ? setStep(step + 1) : onClose()} className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 flex items-center gap-2" > {step === 3 ? 'Publish Job' : 'Continue'} <SafeIcon icon={FiChevronRight} /> </button>
+            <button onClick={onClose} className="px-8 py-4 font-black text-xs uppercase tracking-widest text-slate-500 hover:bg-white rounded-2xl transition-all shadow-sm">
+              Cancel
+            </button>
+            <button 
+              onClick={() => step < 3 ? setStep(step + 1) : handlePublish()} 
+              className="bg-blue-600 text-white px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 flex items-center gap-3"
+            >
+              {step === 3 ? 'Publish Listing' : 'Next Step'} <SafeIcon icon={FiChevronRight} />
+            </button>
           </div>
         </div>
       </motion.div>
@@ -111,58 +167,103 @@ const CreateJobModal = ({ isOpen, onClose }) => {
 };
 
 const Jobs = () => {
+  const { jobs, addJob } = useOnboardData();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const navigate = useNavigate();
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-8 pb-20">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">Active Listings</h2>
-          <p className="text-slate-500 text-sm mt-1">Manage and track your open recruitment campaigns.</p>
+          <h2 className="text-3xl font-black text-slate-900 tracking-tight">Job Management</h2>
+          <p className="text-slate-500 mt-1 font-medium">Create, publish, and manage your organization's open positions.</p>
         </div>
-        <button onClick={() => setIsModalOpen(true)} className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all shadow-xl shadow-slate-200" >
-          <SafeIcon icon={FiPlus} /> Create Job
+        <button 
+          onClick={() => setIsModalOpen(true)} 
+          className="bg-slate-900 hover:bg-slate-800 text-white px-8 py-3.5 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center gap-3 transition-all shadow-xl shadow-slate-200" 
+        >
+          <SafeIcon icon={FiPlus} /> Create New Position
         </button>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {jobsList.map((job, index) => (
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: index * 0.05 }} key={job.id} className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100 hover:shadow-xl hover:border-blue-100 transition-all relative group" >
-            <button className="absolute top-6 right-6 text-slate-300 hover:text-slate-600 p-2 hover:bg-slate-50 rounded-xl transition-all">
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {jobs.map((job, index) => (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }} 
+            animate={{ opacity: 1, scale: 1 }} 
+            transition={{ delay: index * 0.05 }} 
+            key={job.id} 
+            className="bg-white rounded-[40px] p-10 shadow-sm border border-slate-100 hover:shadow-2xl hover:border-blue-500 transition-all relative group flex flex-col"
+          >
+            <button className="absolute top-8 right-8 text-slate-300 hover:text-slate-900 p-2.5 hover:bg-slate-50 rounded-xl transition-all">
               <SafeIcon icon={FiMoreVertical} className="text-xl" />
             </button>
-            <div className="mb-6">
-              <span className={`inline-block px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest mb-4 ${job.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}> {job.status} </span>
-              <h3 className="text-xl font-bold text-slate-900 leading-tight mb-2 group-hover:text-blue-600 transition-colors">{job.title}</h3>
-              <p className="text-sm text-slate-500 font-semibold">{job.dept}</p>
+            
+            <div className="mb-8">
+              <span className={`inline-block px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest mb-6 border ${job.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-50 text-slate-500 border-slate-100'}`}>
+                {job.status}
+              </span>
+              <h3 className="text-2xl font-black text-slate-900 leading-tight mb-2 group-hover:text-blue-600 transition-colors">{job.title}</h3>
+              <p className="text-sm text-slate-500 font-bold uppercase tracking-tighter">{job.dept}</p>
             </div>
-            <div className="space-y-3 mb-8">
-              <div className="flex items-center text-sm text-slate-500">
-                <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center mr-3"> <SafeIcon icon={FiMapPin} className="text-slate-400" /> </div> {job.location}
-              </div>
-              <div className="flex items-center text-sm text-slate-500">
-                <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center mr-3"> <SafeIcon icon={FiClock} className="text-slate-400" /> </div> {job.type}
-              </div>
-            </div>
-            <div className="pt-6 border-t border-slate-50 flex items-center justify-between">
-              <div className="flex items-center">
-                <div className="flex -space-x-2 mr-3">
-                  {[1, 2, 3].map(i => (
-                    <img key={i} src={`https://i.pravatar.cc/100?img=${i + 10}`} className="w-8 h-8 rounded-full border-2 border-white object-cover" alt="Candidate" />
-                  ))}
-                  <div className="w-8 h-8 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-[10px] font-bold text-slate-500">+{job.candidates - 3}</div>
+
+            <div className="space-y-4 mb-10 flex-1">
+              <div className="flex items-center text-sm font-bold text-slate-500">
+                <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center mr-4 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                  <SafeIcon icon={FiMapPin} />
                 </div>
-                <span className="text-xs font-bold text-slate-600">Candidates</span>
+                {job.location}
+              </div>
+              <div className="flex items-center text-sm font-bold text-slate-500">
+                <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center mr-4 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                  <SafeIcon icon={FiClock} />
+                </div>
+                {job.type}
+              </div>
+            </div>
+
+            <div className="pt-8 border-t border-slate-50 flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="flex -space-x-3 mr-4">
+                  {[1, 2, 3].map(i => (
+                    <img key={i} src={`https://i.pravatar.cc/100?img=${i + 10}`} className="w-10 h-10 rounded-xl border-4 border-white object-cover shadow-sm" alt="Candidate" />
+                  ))}
+                  <div className="w-10 h-10 rounded-xl bg-slate-900 border-4 border-white flex items-center justify-center text-[10px] font-black text-white shadow-sm">
+                    {job.candidates > 3 ? `+${job.candidates - 3}` : job.candidates}
+                  </div>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-lg font-black text-slate-900 leading-none">{job.candidates}</span>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Applicants</span>
+                </div>
               </div>
               <button 
-                onClick={() => navigate(`/jobs/${job.id}`)}
-                className="text-blue-600 text-sm font-bold hover:text-blue-800 transition-colors"
-              > Details </button>
+                onClick={() => navigate(`/portal/jobs/${job.id}`)} 
+                className="w-12 h-12 bg-slate-50 text-slate-900 rounded-2xl flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+              >
+                <SafeIcon icon={FiChevronRight} className="text-xl" />
+              </button>
             </div>
           </motion.div>
         ))}
+
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="bg-white border-4 border-dashed border-slate-100 rounded-[40px] p-10 flex flex-col items-center justify-center text-slate-400 hover:border-blue-500 hover:text-blue-600 transition-all group min-h-[400px]"
+        >
+          <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-blue-50 transition-all">
+            <SafeIcon icon={FiPlus} className="text-3xl" />
+          </div>
+          <span className="text-lg font-black tracking-tight">Add Another Position</span>
+          <span className="text-sm font-medium mt-1">Scale your team further</span>
+        </button>
       </div>
-      <CreateJobModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+
+      <CreateJobModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onPublish={addJob}
+      />
     </div>
   );
 };

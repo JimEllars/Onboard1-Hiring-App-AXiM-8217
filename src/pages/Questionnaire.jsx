@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiCheckCircle, FiAlertCircle, FiArrowRight } from 'react-icons/fi';
+import { FiCheckCircle, FiAlertCircle, FiArrowRight, FiLoader } from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 
 const Questionnaire = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const verified = searchParams.get('verified');
+  const candidateId = searchParams.get('candidateId');
 
   const [formData, setFormData] = useState({
     fit: '',
@@ -15,20 +16,47 @@ const Questionnaire = () => {
     goals: ''
   });
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Questionnaire payload submitted:", JSON.stringify(formData, null, 2));
-    setIsSubmitted(true);
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+      const response = await fetch(`${apiUrl}/api/submit-questionnaire`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          candidateId,
+          answers: formData
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit questionnaire');
+      }
+
+      setIsSubmitted(true);
+    } catch (err) {
+      console.error("Submission error:", err);
+      setError("Something went wrong while submitting. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  if (verified !== 'true') {
+  if (verified !== 'true' || !candidateId) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center py-20 px-8">
         <div className="max-w-md w-full bg-white rounded-3xl p-10 text-center shadow-xl shadow-slate-200 border border-slate-100">
@@ -67,6 +95,13 @@ const Questionnaire = () => {
                   <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-2">Screening Questionnaire</h2>
                   <p className="text-slate-500 font-medium">Please answer a few questions to help us understand you better.</p>
                 </div>
+
+                {error && (
+                  <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-xl flex items-center gap-3">
+                    <SafeIcon icon={FiAlertCircle} />
+                    <p className="text-sm font-bold">{error}</p>
+                  </div>
+                )}
 
                 <form onSubmit={handleSubmit} className="space-y-8">
                   <div className="space-y-3">
@@ -108,9 +143,22 @@ const Questionnaire = () => {
                     />
                   </div>
 
-                  <button type="submit" className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black text-lg hover:bg-blue-600 transition-all shadow-xl shadow-slate-200 flex items-center justify-center gap-3 mt-8">
-                    Submit Answers
-                    <SafeIcon icon={FiArrowRight} />
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black text-lg hover:bg-blue-600 transition-all shadow-xl shadow-slate-200 flex items-center justify-center gap-3 mt-8 disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <SafeIcon icon={FiLoader} className="animate-spin" />
+                        Submitting...
+                      </>
+                    ) : (
+                      <>
+                        Submit Answers
+                        <SafeIcon icon={FiArrowRight} />
+                      </>
+                    )}
                   </button>
                 </form>
               </motion.div>

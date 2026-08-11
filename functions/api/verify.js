@@ -56,7 +56,7 @@ export async function onRequestGet(context) {
     }
 
     // Redirect to questionnaire route
-    return Response.redirect(`${origin}/apply/questionnaire?verified=true`, 302);
+    return Response.redirect(`${origin}/apply/questionnaire?verified=true&candidateId=${payload.candidateId}`, 302);
   } catch (error) {
     console.error("Token verification failed:", error.message);
     // Redirect to an error page or back to start

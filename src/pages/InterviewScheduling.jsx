@@ -1,11 +1,30 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
+import Cal, { getCalApi } from '@calcom/embed-react';
 
-const { FiCalendar, FiClock, FiVideo } = FiIcons;
+const { FiClock, FiVideo } = FiIcons;
 
 const InterviewScheduling = () => {
+  const [searchParams] = useSearchParams();
+  const name = searchParams.get('name') || '';
+  const email = searchParams.get('email') || '';
+  const candidateId = searchParams.get('candidateId') || '';
+
+  useEffect(() => {
+    (async function () {
+      const cal = await getCalApi();
+      cal("ui", {
+        theme: "light",
+        styles: { branding: { brandColor: "#3b82f6" } },
+        hideEventTypeDetails: false,
+        layout: "month_view"
+      });
+    })();
+  }, []);
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center py-12 px-4 sm:px-6 lg:px-8">
       <motion.div
@@ -51,19 +70,19 @@ const InterviewScheduling = () => {
             </div>
 
             <div className="lg:col-span-2">
-              <div className="bg-white border border-slate-200 rounded-3xl p-8 min-h-[500px] flex flex-col items-center justify-center text-center shadow-sm">
-                {/* Visual Placeholder for Cal.com Embed */}
-                <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-6">
-                  <SafeIcon icon={FiCalendar} className="text-blue-600 text-3xl" />
-                </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2">Calendar Loading...</h3>
-                <p className="text-slate-500 max-w-md mx-auto mb-8">
-                  The Cal.com widget will be injected here to allow you to seamlessly select your interview slot.
-                </p>
-
-                <div className="w-full max-w-md bg-slate-100 rounded-2xl h-64 border border-slate-200 border-dashed flex items-center justify-center text-slate-400 font-medium">
-                  [ Cal.com Embed Placeholder ]
-                </div>
+              <div className="bg-white border border-slate-200 rounded-3xl p-8 min-h-[500px] flex flex-col justify-center text-center shadow-sm">
+                <Cal
+                  namespace="live-interview"
+                  calLink="axim-onboard/live-interview"
+                  style={{ width: "100%", height: "100%", overflow: "scroll" }}
+                  config={{
+                    name: name,
+                    email: email,
+                    metadata: {
+                      candidateId: candidateId
+                    }
+                  }}
+                />
               </div>
             </div>
           </div>

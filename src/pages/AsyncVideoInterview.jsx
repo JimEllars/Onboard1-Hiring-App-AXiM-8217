@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
@@ -8,6 +8,126 @@ const { FiVideo, FiMic, FiSettings, FiCheckCircle, FiPlay, FiSquare, FiAlertCirc
 const AsyncVideoInterview = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [hasRecorded, setHasRecorded] = useState(false);
+  const [hasPermissions, setHasPermissions] = useState(null);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const videoRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const chunkIndexRef = useRef(0);
+  const streamRef = useRef(null);
+
+  // We need a dummy candidate ID for this sprint if we don't have one in context
+  const candidateId = 'candidate-123';
+
+  useEffect(() => {
+    let active = true;
+
+    const initMedia = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        if (!active) return;
+
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+        setHasPermissions(true);
+      } catch (err) {
+        console.error('Error accessing media devices.', err);
+        if (active) {
+          setHasPermissions(false);
+          setErrorMsg('Camera and microphone permissions were denied or are unavailable. Please allow access to proceed.');
+        }
+      }
+    };
+
+    initMedia();
+
+    return () => {
+      active = false;
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
+
+  const handleDataAvailable = async (event) => {
+    if (event.data && event.data.size > 0) {
+      const currentChunkIndex = chunkIndexRef.current++;
+      const blob = event.data;
+
+      try {
+        // 1. Fetch Presigned URL
+        const res = await fetch('/api/get-video-upload-url', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            candidateId,
+            chunkIndex: currentChunkIndex,
+          }),
+        });
+
+        if (!res.ok) {
+          throw new Error('Failed to fetch presigned URL');
+        }
+
+        const { uploadUrl, key } = await res.json();
+
+        // 2. Upload Chunk to S3
+        const uploadRes = await fetch(uploadUrl, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'video/webm',
+          },
+          body: blob,
+        });
+
+        if (!uploadRes.ok) {
+          throw new Error('Failed to upload chunk to S3');
+        }
+
+        console.log(`Successfully uploaded chunk ${currentChunkIndex} to ${key}`);
+      } catch (error) {
+        console.error('Chunk upload error:', error);
+        // Note: For a real app we might want to alert the user or retry here
+      }
+    }
+  };
+
+  const startRecording = () => {
+    if (!streamRef.current) return;
+
+    chunkIndexRef.current = 0;
+
+    // We try multiple mime types since support varies by browser
+    const mimeTypes = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'];
+    let options = null;
+    for (const mimeType of mimeTypes) {
+      if (MediaRecorder.isTypeSupported(mimeType)) {
+        options = { mimeType };
+        break;
+      }
+    }
+
+    const mediaRecorder = new MediaRecorder(streamRef.current, options || undefined);
+
+    mediaRecorder.ondataavailable = handleDataAvailable;
+
+    mediaRecorder.start(5000); // 5-second chunks
+    mediaRecorderRef.current = mediaRecorder;
+    setIsRecording(true);
+    setHasRecorded(false);
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      setHasRecorded(true);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center py-12 px-4 sm:px-6 lg:px-8">
@@ -38,11 +158,20 @@ const AsyncVideoInterview = () => {
           </div>
 
           <div className="relative aspect-video bg-slate-900 rounded-[32px] overflow-hidden shadow-2xl border-4 border-slate-100 flex items-center justify-center">
-            {/* Placeholder for actual video feed */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500">
-              <SafeIcon icon={FiVideo} className="text-6xl mb-4 opacity-50" />
-              <p className="font-medium text-sm">Camera preview will appear here</p>
-            </div>
+            {/* Actual video feed */}
+            <video
+              ref={videoRef}
+              autoPlay
+              muted
+              playsInline
+              className="absolute inset-0 w-full h-full object-cover transform scale-x-[-1]"
+            />
+            {hasPermissions === false && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-red-500 bg-slate-900 z-10 px-6 text-center">
+                <SafeIcon icon={FiAlertCircle} className="text-6xl mb-4 opacity-80" />
+                <p className="font-medium text-sm">{errorMsg}</p>
+              </div>
+            )}
 
             {/* Recording Indicator Overlay */}
             {isRecording && (
@@ -60,17 +189,14 @@ const AsyncVideoInterview = () => {
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-6">
             {!isRecording && !hasRecorded ? (
               <button
-                onClick={() => setIsRecording(true)}
+                onClick={startRecording} disabled={!hasPermissions}
                 className="w-full sm:w-auto flex items-center justify-center gap-3 px-10 py-5 bg-blue-600 text-white rounded-2xl font-black text-lg hover:bg-blue-700 transition-all shadow-xl shadow-blue-200"
               >
                 <SafeIcon icon={FiPlay} /> Start Recording
               </button>
             ) : isRecording ? (
               <button
-                onClick={() => {
-                  setIsRecording(false);
-                  setHasRecorded(true);
-                }}
+                onClick={stopRecording}
                 className="w-full sm:w-auto flex items-center justify-center gap-3 px-10 py-5 bg-red-600 text-white rounded-2xl font-black text-lg hover:bg-red-700 transition-all shadow-xl shadow-red-200"
               >
                 <SafeIcon icon={FiSquare} /> Stop Recording
@@ -95,10 +221,12 @@ const AsyncVideoInterview = () => {
 
         <div className="bg-slate-50 border-t border-slate-200 p-6 flex justify-center items-center gap-8 text-sm text-slate-500 font-medium">
           <div className="flex items-center gap-2">
-            <SafeIcon icon={FiVideo} className="text-emerald-500" /> Camera Access: <span className="text-slate-900 font-bold">Checking...</span>
+            <SafeIcon icon={FiVideo} className={hasPermissions ? "text-emerald-500" : "text-slate-400"} />
+            Camera Access: <span className="text-slate-900 font-bold">{hasPermissions === true ? 'Granted' : hasPermissions === false ? 'Denied' : 'Checking...'}</span>
           </div>
           <div className="flex items-center gap-2">
-            <SafeIcon icon={FiMic} className="text-emerald-500" /> Mic Access: <span className="text-slate-900 font-bold">Checking...</span>
+            <SafeIcon icon={FiMic} className={hasPermissions ? "text-emerald-500" : "text-slate-400"} />
+            Mic Access: <span className="text-slate-900 font-bold">{hasPermissions === true ? 'Granted' : hasPermissions === false ? 'Denied' : 'Checking...'}</span>
           </div>
         </div>
       </motion.div>

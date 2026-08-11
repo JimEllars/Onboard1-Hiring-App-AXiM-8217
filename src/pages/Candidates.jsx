@@ -9,7 +9,7 @@ const { FiSearch, FiFilter, FiDownload, FiStar, FiMail, FiX, FiFile, FiPhone, Fi
 
 const stages = ['Screening', 'Technical Task', 'Interview', 'Offer', 'Hired'];
 
-const CandidateDetails = ({ candidate, onClose, onEvaluate, onViewScores, onViewProgress, onMoveStage }) => {
+const CandidateDetails = ({ candidate, onClose, onEvaluate, onViewScores, onViewProgress, onMoveStage, onApprove, onReject }) => {
   if (!candidate) return null;
 
   const nextStage = stages[stages.indexOf(candidate.stage) + 1];
@@ -98,16 +98,47 @@ const CandidateDetails = ({ candidate, onClose, onEvaluate, onViewScores, onView
         </div>
 
         <div className="sticky bottom-0 pt-10 pb-4 bg-white border-t border-slate-100 mt-10 flex gap-4">
-          <button 
-            disabled={!nextStage}
-            onClick={() => onMoveStage(candidate.id, nextStage)}
-            className="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-black text-sm hover:bg-blue-600 transition-all shadow-xl shadow-slate-200 disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            Move to {nextStage || 'End'} <SafeIcon icon={FiChevronRight} />
-          </button>
-          <button className="px-8 py-4 bg-rose-50 text-rose-600 rounded-2xl font-black text-sm hover:bg-rose-100 transition-all border border-rose-100">
-            Reject
-          </button>
+          {candidate.stage === 'Screening' ? (
+            <>
+              <button
+                onClick={() => {
+                  onApprove(candidate.id);
+                  onClose();
+                }}
+                className="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-black text-sm hover:bg-blue-700 transition-all shadow-xl shadow-blue-200 flex items-center justify-center gap-2"
+              >
+                Approve (Video Assessment)
+              </button>
+              <button
+                onClick={() => {
+                  onReject(candidate.id);
+                  onClose();
+                }}
+                className="px-8 py-4 bg-rose-50 text-rose-600 rounded-2xl font-black text-sm hover:bg-rose-100 transition-all border border-rose-100"
+              >
+                Reject
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                disabled={!nextStage}
+                onClick={() => onMoveStage(candidate.id, nextStage)}
+                className="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-black text-sm hover:bg-blue-600 transition-all shadow-xl shadow-slate-200 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                Move to {nextStage || 'End'} <SafeIcon icon={FiChevronRight} />
+              </button>
+              <button
+                onClick={() => {
+                  onReject(candidate.id);
+                  onClose();
+                }}
+                className="px-8 py-4 bg-rose-50 text-rose-600 rounded-2xl font-black text-sm hover:bg-rose-100 transition-all border border-rose-100"
+              >
+                Reject
+              </button>
+            </>
+          )}
         </div>
       </div>
     </motion.div>
@@ -115,7 +146,7 @@ const CandidateDetails = ({ candidate, onClose, onEvaluate, onViewScores, onView
 };
 
 const Candidates = () => {
-  const { candidates, updateCandidateStage } = useOnboardData();
+  const { candidates, updateCandidateStage, approveCandidate } = useOnboardData();
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [viewMode, setViewMode] = useState('list');
   const [search, setSearch] = useState('');
@@ -281,6 +312,8 @@ const Candidates = () => {
               onViewScores={(id) => navigate(`/portal/candidates/${id}/scores`)} 
               onViewProgress={(id) => navigate(`/portal/candidates/${id}/progress`)}
               onMoveStage={handleMoveStage}
+              onApprove={(id) => approveCandidate(id, 'approved')}
+              onReject={(id) => approveCandidate(id, 'rejected')}
             />
           </>
         )}

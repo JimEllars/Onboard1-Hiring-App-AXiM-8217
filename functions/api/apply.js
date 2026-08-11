@@ -1,5 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { issueMagicLinkToken } from '../utils/auth.js';
+import { sendMagicLinkEmail } from '../utils/email.js';
+
 
 export async function onRequestOptions(context) {
   const request = context.request;
@@ -122,6 +124,15 @@ export async function onRequestPost(context) {
     const jwtSecret = env.JWT_SECRET || 'default-secret-key-for-development';
     const magicLinkToken = await issueMagicLinkToken(candidate.id, jwtSecret);
     console.log("Magic link token generated successfully");
+
+    // Dispatch email
+    try {
+      await sendMagicLinkEmail(payload.candidateEmail, magicLinkToken, env, origin);
+      console.log("Magic link email dispatched successfully");
+    } catch (emailError) {
+      // Log error for telemetry but don't fail the request
+      console.error("Failed to send magic link email:", emailError);
+    }
 
     // Returning success
     return new Response(JSON.stringify({ success: true, message: "Application received successfully", token: magicLinkToken }), {

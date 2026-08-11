@@ -88,5 +88,40 @@ export const useOnboardData = () => {
     interviewsToday: 18 // Mock static for now
   }), [candidates, jobs]);
 
-  return { jobs, candidates, addJob, updateCandidateStage, stats, isLoading, error };
+
+  const approveCandidate = useCallback(async (candidateId, decision) => {
+    // Find candidate to revert if API fails
+    const candidateToUpdate = candidates.find(c => c.id === candidateId);
+    if (!candidateToUpdate) return;
+    const oldStage = candidateToUpdate.stage;
+
+    // Optimistic update
+    const newStage = decision === 'approved' ? 'Video Assessment' : 'Rejected';
+    updateCandidateStage(candidateId, newStage);
+
+    try {
+      const res = await fetch('/api/approve-candidate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          candidateId,
+          decision,
+          jobId: candidateToUpdate.job_id
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to approve candidate');
+      }
+    } catch (err) {
+      console.error('Approval failed, reverting state:', err);
+      // Revert stage
+      updateCandidateStage(candidateId, oldStage);
+    }
+  }, [candidates, updateCandidateStage]);
+
+  return { jobs, candidates, addJob, updateCandidateStage, approveCandidate, stats, isLoading, error };
 };

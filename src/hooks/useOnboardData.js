@@ -51,7 +51,14 @@ export const useOnboardData = () => {
         if (candidatesRes.error) throw candidatesRes.error;
 
         setJobs(jobsRes.data.length ? jobsRes.data : MOCK_JOBS);
-        setCandidates(candidatesRes.data.length ? candidatesRes.data : MOCK_CANDIDATES);
+        const liveCandidates = candidatesRes.data.map(c => ({
+          ...c,
+          stage: c.stage || 'Screening', // Default to first queue if stage is missing
+          avatar: c.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(c.name || 'Candidate') + '&background=random',
+          applied: c.created_at ? new Date(c.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recently',
+          role: jobsRes.data.find(j => j.id === c.job_id)?.title || 'Applicant'
+        }));
+        setCandidates(liveCandidates.length ? liveCandidates : MOCK_CANDIDATES);
       } catch (err) {
         console.warn('Silently falling back to mock data. Reason:', err.message);
         setJobs(MOCK_JOBS);

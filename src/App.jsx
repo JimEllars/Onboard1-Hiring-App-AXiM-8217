@@ -25,6 +25,7 @@ import ApplicationForm from './pages/ApplicationForm';
 import ReferralProgram from './pages/ReferralProgram';
 import Questionnaire from './pages/Questionnaire';
 import AsyncVideoInterview from './pages/AsyncVideoInterview';
+import InterviewScheduling from './pages/InterviewScheduling';
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
         <Route path="/" element={<PublicJobBoard />} />
         <Route path="/apply/questionnaire" element={<Questionnaire />} />
         <Route path="/apply/video-assessment" element={<AsyncVideoInterview />} />
+        <Route path="/apply/schedule" element={<InterviewScheduling />} />
         <Route path="/apply/:id" element={<ApplicationForm />} />
 
         {/* Recruiter Portal Routes */}

@@ -1,4 +1,5 @@
 import { verifyMagicLinkToken } from '../utils/auth.js';
+import { createClient } from '@supabase/supabase-js';
 
 export async function onRequestGet(context) {
   const request = context.request;
@@ -22,6 +23,37 @@ export async function onRequestGet(context) {
 
     // Log success for telemetry
     console.log(`Successfully verified candidate ${payload.candidateId}`);
+
+    // Fetch candidate data from Supabase to send to Temporal
+    if (env.SUPABASE_URL && env.SUPABASE_SERVICE_KEY) {
+      const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_KEY);
+      const { data: candidate, error } = await supabase
+        .from('onboard1_candidates')
+        .select('*')
+        .eq('id', payload.candidateId)
+        .single();
+
+      if (!error && candidate) {
+        // Dispatch Temporal SignalWithStart
+        const temporalEndpoint = env.TEMPORAL_REST_ENDPOINT || 'http://localhost:8080/api/v1/temporal/signal-with-start';
+        const workflowId = `candidate-${candidate.email}-${candidate.job_id}`;
+
+        const temporalPayload = {
+          workflowId: workflowId,
+          workflowType: 'CandidateOnboardingWorkflow',
+          candidateData: candidate
+        };
+
+        // Fire and forget using context.waitUntil
+        context.waitUntil(
+          fetch(temporalEndpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(temporalPayload)
+          }).catch(err => console.error("Temporal trigger failed:", err))
+        );
+      }
+    }
 
     // Redirect to questionnaire route
     return Response.redirect(`${origin}/apply/questionnaire?verified=true`, 302);

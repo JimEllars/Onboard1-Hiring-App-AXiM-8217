@@ -23,6 +23,7 @@ import Profile from './pages/Profile';
 import PublicJobBoard from './pages/PublicJobBoard';
 import ApplicationForm from './pages/ApplicationForm';
 import ReferralProgram from './pages/ReferralProgram';
+import Questionnaire from './pages/Questionnaire';
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
       <Routes>
         {/* Candidate Facing Routes */}
         <Route path="/" element={<PublicJobBoard />} />
+        <Route path="/apply/questionnaire" element={<Questionnaire />} />
         <Route path="/apply/:id" element={<ApplicationForm />} />
 
         {/* Recruiter Portal Routes */}

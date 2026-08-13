@@ -11,6 +11,7 @@ export default [
     languageOptions: {
       ecmaVersion: 2020,
       globals: {
+      WebSocketPair: "readonly",
         ...globals.browser,
         Response: true,
         Request: true,

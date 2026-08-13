@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useWebRTC } from '../hooks/useWebRTC';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useParams } from 'react-router-dom';
 import * as FiIcons from 'react-icons/fi';
@@ -8,12 +9,40 @@ const { FiMic, FiMicOff, FiVideo, FiVideoOff, FiPhone, FiMessageSquare, FiUsers,
 
 const InterviewRoom = () => {
   const navigate = useNavigate();
-  const [isMuted, setIsMuted] = useState(false);
-  const [isVideoOff, setIsVideoOff] = useState(false);
+  const { id: interviewId } = useParams(); // assuming the URL is like /interview/:id
   const [activeTab, setActiveTab] = useState('video'); // 'video', 'code', 'notes'
   const [showFeedback, setShowFeedback] = useState(false);
   const [timer, setTimer] = useState(0);
   const [code, setCode] = useState('function findSum(arr) {\n  // Write your solution here\n  return arr.reduce((a, b) => a + b, 0);\n}');
+
+  // Use WebRTC hook
+  const {
+    localStream,
+    remoteStream,
+    error,
+    isMuted,
+    isVideoOff,
+    toggleMute,
+    toggleVideo
+  } = useWebRTC(interviewId || 'default-room');
+
+  // Refs for video elements
+  const localVideoRef = useRef(null);
+  const remoteVideoRef = useRef(null);
+
+  // Attach streams to video elements
+  useEffect(() => {
+    if (localVideoRef.current && localStream) {
+      localVideoRef.current.srcObject = localStream;
+    }
+  }, [localStream]);
+
+  useEffect(() => {
+    if (remoteVideoRef.current && remoteStream) {
+      remoteVideoRef.current.srcObject = remoteStream;
+    }
+  }, [remoteStream]);
+
 
   useEffect(() => {
     const interval = setInterval(() => setTimer(t => t + 1), 1000);
@@ -66,11 +95,18 @@ const InterviewRoom = () => {
         {/* Video Views - Sticky Sidebar if Code/Notes active */}
         <div className={`${activeTab === 'video' ? 'flex-1 grid grid-cols-1 md:grid-cols-2' : 'w-72 flex flex-col'} gap-6 transition-all duration-500`}>
           <div className="relative bg-slate-900 rounded-[32px] overflow-hidden border border-white/5 shadow-2xl group">
-            <img 
-              src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=facearea&facepad=2&w=800&h=600&q=80" 
-              className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-700"
-              alt="Candidate"
-            />
+            {remoteStream ? (
+              <video
+                ref={remoteVideoRef}
+                autoPlay
+                playsInline
+                className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-700"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-slate-800 text-slate-400">
+                Waiting for Candidate...
+              </div>
+            )}
             <div className="absolute bottom-4 left-4 px-3 py-1.5 bg-black/40 backdrop-blur-md rounded-lg border border-white/10 text-[10px] font-bold">
               Eleanor Pena (Candidate)
             </div>
@@ -82,10 +118,12 @@ const InterviewRoom = () => {
                 <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center text-xl font-black">SJ</div>
               </div>
             ) : (
-              <img 
-                src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=800&h=600&q=80" 
+              <video
+                ref={localVideoRef}
+                autoPlay
+                playsInline
+                muted
                 className="w-full h-full object-cover"
-                alt="Interviewer"
               />
             )}
             <div className="absolute bottom-4 left-4 px-3 py-1.5 bg-black/40 backdrop-blur-md rounded-lg border border-white/10 flex items-center gap-2 text-[10px] font-bold">
@@ -151,13 +189,13 @@ const InterviewRoom = () => {
       <div className="h-24 px-8 flex items-center justify-between bg-slate-900 border-t border-white/5">
         <div className="flex items-center gap-3">
           <button 
-            onClick={() => setIsMuted(!isMuted)}
+            onClick={toggleMute}
             className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${isMuted ? 'bg-red-500 text-white' : 'bg-white/10 hover:bg-white/20'}`}
           >
             <SafeIcon icon={isMuted ? FiMicOff : FiMic} />
           </button>
           <button 
-            onClick={() => setIsVideoOff(!isVideoOff)}
+            onClick={toggleVideo}
             className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${isVideoOff ? 'bg-red-500 text-white' : 'bg-white/10 hover:bg-white/20'}`}
           >
             <SafeIcon icon={isVideoOff ? FiVideoOff : FiVideo} />

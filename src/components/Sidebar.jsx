@@ -20,9 +20,9 @@ const navItems = [
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
   return (
-    <motion.aside 
+        <motion.aside
       animate={{ width: isOpen ? 260 : 80 }}
-      className="bg-slate-900 text-white flex flex-col border-r border-slate-800 shadow-xl z-20 hidden md:flex"
+      className={`bg-slate-900 text-white flex flex-col border-r border-slate-800 shadow-xl z-50 fixed md:relative h-full transition-all duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
     >
       <div className="h-16 flex items-center justify-between px-6 border-b border-slate-800">
         {isOpen && (

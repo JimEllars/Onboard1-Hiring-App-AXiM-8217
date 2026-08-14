@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 import { useOnboardData } from '../hooks/useOnboardData';
+import { logEvent, TELEMETRY_EVENTS } from '../lib/telemetry';
 
 const { FiSearch, FiFilter, FiDownload, FiStar, FiMail, FiX, FiFile, FiPhone, FiExternalLink, FiGrid, FiList, FiEdit, FiBarChart2, FiActivity, FiChevronRight } = FiIcons;
 
@@ -160,6 +161,7 @@ const Candidates = () => {
   }, [candidates, search]);
 
   const handleMoveStage = (id, stage) => {
+    logEvent(TELEMETRY_EVENTS.CANDIDATE_PIPELINE_EVENT, { action: 'stage_change', candidateId: id, newStage: stage });
     updateCandidateStage(id, stage);
     setSelectedCandidate(prev => ({ ...prev, stage }));
   };

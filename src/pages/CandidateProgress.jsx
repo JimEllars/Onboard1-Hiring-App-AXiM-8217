@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { logEvent, TELEMETRY_EVENTS } from '../lib/telemetry';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import * as FiIcons from 'react-icons/fi';
@@ -13,22 +14,26 @@ const CandidateProgress = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const candidate = {
+
+
+  const [candidate, setCandidate] = useState({
     name: 'Eleanor Pena',
     role: 'Senior Frontend Engineer',
     avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
     currentStage: 'Interview',
     appliedDate: 'Oct 12, 2023',
     timeInProcess: '14 Days',
-  };
+  });
 
-  const stages = [
+  const [stages, setStages] = useState([
     { name: 'Screening', status: 'completed', duration: '2 days', date: 'Oct 14' },
     { name: 'Technical Task', status: 'completed', duration: '5 days', date: 'Oct 19' },
     { name: 'Interview', status: 'current', duration: '3 days', date: 'Oct 22' },
     { name: 'Offer', status: 'pending', duration: '-', date: '-' },
     { name: 'Hired', status: 'pending', duration: '-', date: '-' },
-  ];
+  ]);
+
+  const [isMoving, setIsMoving] = useState(false);
 
   const timeline = [
     { type: 'stage', title: 'Moved to Interview Stage', user: 'Sarah Jenkins', time: '2 hours ago', icon: FiActivity, color: 'text-blue-600', bg: 'bg-blue-50' },
@@ -36,6 +41,29 @@ const CandidateProgress = () => {
     { type: 'file', title: 'Uploaded Portfolio Design.pdf', user: 'Eleanor Pena (Candidate)', time: '3 days ago', icon: FiFileText, color: 'text-emerald-600', bg: 'bg-emerald-50' },
     { type: 'stage', title: 'Completed Technical Task', user: 'System', time: '5 days ago', icon: FiCheck, color: 'text-slate-600', bg: 'bg-slate-50' },
   ];
+
+  const handleMoveToNextStage = () => {
+    setIsMoving(true);
+
+    // Simulate API call
+    setTimeout(() => {
+      const currentIndex = stages.findIndex(s => s.status === 'current');
+      if (currentIndex < stages.length - 1) {
+        const newStages = [...stages];
+        newStages[currentIndex].status = 'completed';
+        newStages[currentIndex + 1].status = 'current';
+
+        setStages(newStages);
+        setCandidate(prev => ({ ...prev, currentStage: newStages[currentIndex + 1].name }));
+        logEvent(TELEMETRY_EVENTS.CANDIDATE_PIPELINE_EVENT, {
+          action: 'stage_change',
+          candidateId: id,
+          newStage: newStages[currentIndex + 1].name
+        });
+      }
+      setIsMoving(false);
+    }, 800);
+  };
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-12">
@@ -48,7 +76,11 @@ const CandidateProgress = () => {
         </button>
         <div className="flex gap-3">
           <button className="px-6 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-700 font-bold text-sm hover:bg-slate-50 transition-colors">Edit Pipeline</button>
-          <button className="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-100">Move to Next Stage</button>
+          <button onClick={handleMoveToNextStage} disabled={isMoving} className="flex items-center justify-center min-w-[160px] px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 disabled:opacity-70">
+            {isMoving ? (
+               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : "Move to Next Stage"}
+          </button>
         </div>
       </div>
 

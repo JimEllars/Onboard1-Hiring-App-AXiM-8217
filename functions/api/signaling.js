@@ -1,41 +1,56 @@
-// In-memory store for signaling rooms. Note: In production with multiple isolates,
-// a Durable Object or Redis (KV/D1) is recommended.
-const rooms = new Map();
+import { errorResponse, handleOptions, getCorsHeaders } from '../utils/response.js';
+
+export async function onRequestOptions({ request }) {
+  return handleOptions(request);
+}
 
 export async function onRequest(context) {
   const { request } = context;
-  const upgradeHeader = request.headers.get('Upgrade');
 
+  // Handle CORS for regular requests if any, though websockets use Upgrade
+  const origin = request.headers.get("Origin");
+  const headers = getCorsHeaders(origin);
+
+  const upgradeHeader = request.headers.get('Upgrade');
   if (!upgradeHeader || upgradeHeader !== 'websocket') {
-    return new Response('Expected Upgrade: websocket', { status: 426 });
+    return errorResponse('Expected Upgrade: websocket', "UPGRADE_REQUIRED", 426, headers);
   }
 
-  // Use URL to get the room/interview ID
   const url = new URL(request.url);
   const roomId = url.searchParams.get('roomId');
 
   if (!roomId) {
-    return new Response('roomId query parameter is required', { status: 400 });
+    return errorResponse("roomId query parameter is required", "MISSING_PARAMS", 400, headers);
   }
 
-  const [client, server] = Object.values(new WebSocketPair());
+  // Cloudflare WebSockets
+  const webSocketPair = new WebSocketPair();
+  const [client, server] = Object.values(webSocketPair);
 
   server.accept();
 
-  if (!rooms.has(roomId)) {
-    rooms.set(roomId, new Set());
+  // Basic in-memory hub for broadcasting
+  // NOTE: This only works if connected to the same isolate/worker.
+  // For cross-worker, you need Durable Objects.
+  if (!globalThis.rooms) {
+    globalThis.rooms = new Map();
   }
-  const room = rooms.get(roomId);
+
+  if (!globalThis.rooms.has(roomId)) {
+    globalThis.rooms.set(roomId, new Set());
+  }
+
+  const room = globalThis.rooms.get(roomId);
   room.add(server);
 
-  server.addEventListener('message', (event) => {
-    // Broadcast message to other peers in the room
-    for (const peer of room) {
-      if (peer !== server) {
+  server.addEventListener('message', event => {
+    // Broadcast message to everyone else in the room
+    for (const participant of room) {
+      if (participant !== server) {
         try {
-          peer.send(event.data);
+           participant.send(event.data);
         } catch (e) {
-          console.error('Error sending to peer:', e);
+           room.delete(participant);
         }
       }
     }
@@ -44,19 +59,13 @@ export async function onRequest(context) {
   server.addEventListener('close', () => {
     room.delete(server);
     if (room.size === 0) {
-      rooms.delete(roomId);
-    }
-  });
-
-  server.addEventListener('error', () => {
-    room.delete(server);
-    if (room.size === 0) {
-      rooms.delete(roomId);
+      globalThis.rooms.delete(roomId);
     }
   });
 
   return new Response(null, {
     status: 101,
     webSocket: client,
+    headers: headers // Incase any CORS headers need to be passed on 101 upgrade (usually browser ignores, but good practice)
   });
 }

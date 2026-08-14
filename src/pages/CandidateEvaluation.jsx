@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { logEvent } from '../lib/telemetry';
+import { logEvent, TELEMETRY_EVENTS } from '../lib/telemetry';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 
@@ -45,7 +45,7 @@ const CandidateEvaluation = () => {
       feedbackNotes: comment
     };
 
-    logEvent('Evaluation_Submission_Attempt', { candidateId: payload.candidateId, recommendation });
+    logEvent(TELEMETRY_EVENTS.CANDIDATE_PIPELINE_EVENT, { action: 'Evaluation_Submission_Attempt', candidateId: payload.candidateId, recommendation });
 
     try {
       const response = await fetch('/api/submit-evaluation', {
@@ -58,7 +58,7 @@ const CandidateEvaluation = () => {
         throw new Error('Network response was not ok');
       }
 
-      logEvent('Evaluation_Submission_Success', { candidateId: payload.candidateId });
+      logEvent(TELEMETRY_EVENTS.CANDIDATE_PIPELINE_EVENT, { action: 'Evaluation_Submission_Success', candidateId: payload.candidateId });
 
       setIsSuccess(true);
       setTimeout(() => {
@@ -67,7 +67,7 @@ const CandidateEvaluation = () => {
 
     } catch (error) {
       console.error('Submission failed:', error);
-      logEvent('Evaluation_Submission_Error', { candidateId: payload.candidateId, error: error.message });
+      logEvent(TELEMETRY_EVENTS.CANDIDATE_PIPELINE_EVENT, { action: 'Evaluation_Submission_Error', candidateId: payload.candidateId, error: error.message });
 
       // Fallback for missing backend environment
       setIsSuccess(true);

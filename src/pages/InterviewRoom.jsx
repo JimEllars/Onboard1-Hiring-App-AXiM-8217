@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useParams } from 'react-router-dom';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
+import { logEvent, TELEMETRY_EVENTS } from '../lib/telemetry';
 
 const { FiMic, FiMicOff, FiVideo, FiVideoOff, FiPhone, FiMessageSquare, FiUsers, FiSettings, FiMaximize, FiX, FiCheck, FiStar, FiCode, FiEdit3, FiTerminal } = FiIcons;
 
@@ -46,7 +47,47 @@ const InterviewRoom = () => {
 
   useEffect(() => {
     const interval = setInterval(() => setTimer(t => t + 1), 1000);
-    return () => clearInterval(interval);
+    if (error && error.includes('media devices')) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6 text-white font-sans">
+        <div className="bg-slate-900 border border-slate-800 p-8 rounded-[32px] text-center max-w-md shadow-2xl">
+          <div className="w-16 h-16 bg-blue-500/10 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-6">
+            <SafeIcon icon={FiVideoOff} className="text-2xl" />
+          </div>
+          <h2 className="text-2xl font-black mb-4">Camera or Microphone Access Denied</h2>
+          <p className="text-slate-400 mb-8">Please allow camera and microphone permissions in your browser to join the interview.</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="w-full py-4 bg-blue-600 hover:bg-blue-700 rounded-2xl font-black text-sm transition-all"
+          >
+            Check Permissions & Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6 text-white font-sans">
+        <div className="bg-slate-900 border border-red-500/20 p-8 rounded-[32px] text-center max-w-md shadow-2xl">
+          <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+            <SafeIcon icon={FiX} className="text-2xl" />
+          </div>
+          <h2 className="text-2xl font-black mb-4">Connection Error</h2>
+          <p className="text-slate-400 mb-8">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="w-full py-4 bg-blue-600 hover:bg-blue-700 rounded-2xl font-black text-sm transition-all"
+          >
+            Retry Connection
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return () => clearInterval(interval);
   }, []);
 
   const formatTime = (seconds) => {
@@ -189,13 +230,13 @@ const InterviewRoom = () => {
       <div className="h-24 px-8 flex items-center justify-between bg-slate-900 border-t border-white/5">
         <div className="flex items-center gap-3">
           <button 
-            onClick={toggleMute}
+            onClick={() => { toggleMute(); logEvent(TELEMETRY_EVENTS.MEDIA_STREAM_EVENT, { action: 'toggle_mute', state: !isMuted, roomId: interviewId }); }}
             className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${isMuted ? 'bg-red-500 text-white' : 'bg-white/10 hover:bg-white/20'}`}
           >
             <SafeIcon icon={isMuted ? FiMicOff : FiMic} />
           </button>
           <button 
-            onClick={toggleVideo}
+            onClick={() => { toggleVideo(); logEvent(TELEMETRY_EVENTS.MEDIA_STREAM_EVENT, { action: 'toggle_video', state: !isVideoOff, roomId: interviewId }); }}
             className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${isVideoOff ? 'bg-red-500 text-white' : 'bg-white/10 hover:bg-white/20'}`}
           >
             <SafeIcon icon={isVideoOff ? FiVideoOff : FiVideo} />
@@ -210,7 +251,7 @@ const InterviewRoom = () => {
             <SafeIcon icon={FiCheck} /> Complete Evaluation
           </button>
           <button 
-            onClick={() => navigate('/portal/interviews')}
+            onClick={() => { logEvent(TELEMETRY_EVENTS.MEDIA_STREAM_EVENT, { action: 'end_session', roomId: interviewId }); navigate('/portal/interviews'); }}
             className="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white px-8 py-3.5 rounded-2xl font-black text-sm border border-red-500/20 transition-all flex items-center gap-2"
           >
             <SafeIcon icon={FiPhone} className="rotate-[135deg]" /> End Session
@@ -252,7 +293,7 @@ const InterviewRoom = () => {
                   </div>
                 ))}
                 <div className="pt-6 space-y-4">
-                  <button onClick={() => navigate('/portal/candidates')} className="w-full py-4 bg-emerald-600 rounded-2xl font-black text-sm shadow-xl shadow-emerald-900/20">
+                  <button onClick={() => { logEvent(TELEMETRY_EVENTS.CANDIDATE_PIPELINE_EVENT, { action: 'Evaluation_Submission_Success', candidateId: interviewId }); navigate('/portal/candidates'); }} className="w-full py-4 bg-emerald-600 rounded-2xl font-black text-sm shadow-xl shadow-emerald-900/20">
                     Submit Final Decision
                   </button>
                   <button onClick={() => setShowFeedback(false)} className="w-full py-4 bg-white/5 rounded-2xl font-black text-sm text-slate-400">

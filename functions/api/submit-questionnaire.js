@@ -1,159 +1,71 @@
 import { createClient } from '@supabase/supabase-js';
+import { successResponse, errorResponse, handleOptions, getCorsHeaders } from '../utils/response.js';
 
-export async function onRequestOptions(context) {
-  const request = context.request;
-  const origin = request.headers.get("Origin");
-
-  let allowedOrigin = "*";
-  if (origin) {
-    try {
-      const originUrl = new URL(origin);
-      if (
-        originUrl.hostname === "localhost" ||
-        originUrl.hostname === "127.0.0.1" ||
-        originUrl.hostname.endsWith(".pages.dev")
-      ) {
-        allowedOrigin = origin;
-      }
-    } catch (e) {
-      // Ignore
-    }
-  }
-
-  return new Response(null, {
-    headers: {
-      "Access-Control-Allow-Origin": allowedOrigin,
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-    },
-  });
+export async function onRequestOptions({ request }) {
+  return handleOptions(request);
 }
 
-export async function onRequestPost(context) {
+export async function onRequestPost({ request, env }) {
+  const origin = request.headers.get("Origin");
+  const headers = getCorsHeaders(origin);
+
   try {
-    const request = context.request;
-    const origin = request.headers.get("Origin");
-    const env = context.env;
-
-    let allowedOrigin = "*";
-
-    // Secure CORS validation
-    if (origin) {
-      try {
-        const originUrl = new URL(origin);
-        if (
-          originUrl.hostname === "localhost" ||
-          originUrl.hostname === "127.0.0.1" ||
-          originUrl.hostname.endsWith(".pages.dev")
-        ) {
-          allowedOrigin = origin;
-        } else {
-          return new Response(JSON.stringify({ error: "Forbidden: Invalid Origin" }), {
-            status: 403,
-            headers: { "Content-Type": "application/json" }
-          });
-        }
-      } catch (e) {
-        return new Response(JSON.stringify({ error: "Forbidden: Invalid Origin URL" }), {
-          status: 403,
-          headers: { "Content-Type": "application/json" }
-        });
-      }
-    }
-
-    const headers = {
-      "Access-Control-Allow-Origin": allowedOrigin,
-      "Content-Type": "application/json"
-    };
-
-    // Parse payload
     let payload;
     try {
       payload = await request.json();
     } catch (e) {
-      return new Response(JSON.stringify({ error: "Invalid JSON payload" }), {
-        status: 400,
-        headers
-      });
+      return errorResponse("Invalid JSON payload", "INVALID_PAYLOAD", 400, headers);
     }
 
-    // Validate required fields
     if (!payload.candidateId || !payload.answers) {
-      return new Response(JSON.stringify({ error: "Missing required fields" }), {
-        status: 400,
-        headers
-      });
+      return errorResponse("Missing required fields", "MISSING_FIELDS", 400, headers);
     }
 
-    // Initialize Supabase Client
     if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) {
-      return new Response(JSON.stringify({ error: "Internal Server Error", message: "Supabase credentials are not configured" }), {
-        status: 500,
-        headers
-      });
+      return errorResponse("Supabase credentials are not configured", "CONFIG_ERROR", 500, headers);
     }
     const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_KEY);
 
-    // Get the candidate first to construct Temporal workflowId
     const { data: candidate, error: fetchError } = await supabase
       .from('onboard1_candidates')
-      .select('*')
+      .select('id, status')
       .eq('id', payload.candidateId)
       .single();
 
     if (fetchError || !candidate) {
-      return new Response(JSON.stringify({ error: "Candidate not found" }), {
-        status: 404,
-        headers
-      });
+      return errorResponse("Candidate not found", "NOT_FOUND", 404, headers);
     }
 
-    // Update candidate record: append JSON answers and advance stage to "Screening"
     const { error: dbError } = await supabase
-      .from('onboard1_candidates')
-      .update({
-        questionnaire_answers: payload.answers,
-        stage: 'Screening' // First human-review queue
-      })
-      .eq('id', payload.candidateId);
+      .from('onboard1_questionnaire_responses')
+      .insert({
+        candidate_id: payload.candidateId,
+        responses: payload.answers
+      });
 
     if (dbError) {
-      console.error("Supabase update error:", dbError);
-      return new Response(JSON.stringify({ error: "Failed to save questionnaire data" }), {
-        status: 500,
-        headers
-      });
+      console.error("Supabase insert error:", dbError);
+      return errorResponse("Failed to save questionnaire data", "DB_ERROR", 500, headers);
     }
 
-    // Dispatch Temporal Signal
-    const temporalEndpoint = env.TEMPORAL_REST_ENDPOINT || 'http://localhost:8080/api/v1/temporal/signal';
-    const workflowId = `candidate-${candidate.email}-${candidate.job_id}`;
+    if (env.TEMPORAL_REST_ENDPOINT) {
+       try {
+         await fetch(env.TEMPORAL_REST_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+               signal: 'QuestionnaireCompletedSignal',
+               candidateId: payload.candidateId
+            })
+         });
+       } catch (err) {
+         console.error("Failed to trigger Temporal signal", err);
+       }
+    }
 
-    const temporalPayload = {
-      workflowId: workflowId,
-      signalName: 'QuestionnaireSubmittedSignal',
-      signalData: payload.answers
-    };
-
-    context.waitUntil(
-      fetch(temporalEndpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(temporalPayload)
-      }).catch(err => console.error("Temporal signal failed:", err))
-    );
-
-    return new Response(JSON.stringify({ success: true, message: "Questionnaire submitted successfully" }), {
-      status: 200,
-      headers
-    });
+    return successResponse({ message: "Questionnaire submitted successfully" }, 200, headers);
   } catch (error) {
     console.error("Internal server error:", error);
-    return new Response(JSON.stringify({ error: "Internal Server Error", message: error.message }), {
-      status: 500,
-      headers: {
-        "Content-Type": "application/json"
-      }
-    });
+    return errorResponse(error.message, "INTERNAL_ERROR", 500, headers);
   }
 }

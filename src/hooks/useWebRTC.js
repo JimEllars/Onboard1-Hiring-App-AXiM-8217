@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { logEvent, TELEMETRY_EVENTS } from '../lib/telemetry';
 
 const ICE_SERVERS = {
   iceServers: [
@@ -15,6 +16,62 @@ export function useWebRTC(roomId) {
   const pcRef = useRef(null);
   const wsRef = useRef(null);
   const localStreamRef = useRef(null);
+
+  const retryCount = useRef(0);
+  const maxRetries = 3;
+
+  const connectSignaling = useCallback((pc) => {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/api/signaling?roomId=${roomId}`;
+
+    const ws = new WebSocket(wsUrl);
+    wsRef.current = ws;
+
+    ws.onopen = async () => {
+      retryCount.current = 0; // Reset retries on success
+      logEvent(TELEMETRY_EVENTS.MEDIA_STREAM_EVENT, { action: 'signaling_connected', roomId });
+      try {
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        ws.send(JSON.stringify({ type: 'offer', sdp: offer }));
+      } catch (err) {
+        console.error('Error creating offer:', err);
+      }
+    };
+
+    ws.onmessage = async (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        if (message.type === 'offer') {
+          await pc.setRemoteDescription(new RTCSessionDescription(message.sdp));
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          ws.send(JSON.stringify({ type: 'answer', sdp: answer }));
+        } else if (message.type === 'answer') {
+          await pc.setRemoteDescription(new RTCSessionDescription(message.sdp));
+        } else if (message.type === 'ice-candidate') {
+          await pc.addIceCandidate(new RTCIceCandidate(message.candidate));
+        }
+      } catch (err) {
+        console.error('Error handling signaling message:', err);
+      }
+    };
+
+    ws.onerror = (err) => {
+      console.error('WebSocket error:', err);
+      logEvent(TELEMETRY_EVENTS.MEDIA_STREAM_EVENT, { action: 'signaling_error', roomId, error: 'Signaling server connection error' });
+    };
+
+    ws.onclose = () => {
+      if (retryCount.current < maxRetries) {
+        retryCount.current += 1;
+        logEvent(TELEMETRY_EVENTS.MEDIA_STREAM_EVENT, { action: 'signaling_reconnect', roomId, attempt: retryCount.current });
+        setTimeout(() => connectSignaling(pc), 1000 * retryCount.current);
+      } else {
+        setError('Signaling server connection lost after retries');
+      }
+    };
+  }, [roomId, connectSignaling]);
 
   // Track states for UI
   const [isMuted, setIsMuted] = useState(false);
@@ -66,61 +123,20 @@ export function useWebRTC(roomId) {
           }
         };
 
-        // 3. Connect to Signaling Server
-        // Construct WS URL based on current origin
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${protocol}//${window.location.host}/api/signaling?roomId=${roomId}`;
-
-        const ws = new WebSocket(wsUrl);
-        wsRef.current = ws;
-
-        ws.onopen = async () => {
-          // If we are the ones starting, we could create an offer.
-          // To simplify, let's create an offer and send it once connected.
-          try {
-            const offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
-            ws.send(JSON.stringify({
-              type: 'offer',
-              sdp: offer
-            }));
-          } catch (err) {
-            console.error('Error creating offer:', err);
-          }
+        // Handle connection state changes for telemetry
+        pc.oniceconnectionstatechange = () => {
+          logEvent(TELEMETRY_EVENTS.MEDIA_STREAM_EVENT, {
+            action: 'ice_connection_state_change',
+            roomId,
+            state: pc.iceConnectionState
+          });
         };
 
-        ws.onmessage = async (event) => {
-          try {
-            const message = JSON.parse(event.data);
-
-            if (message.type === 'offer') {
-              // Received an offer, so we set remote desc and create answer
-              await pc.setRemoteDescription(new RTCSessionDescription(message.sdp));
-              const answer = await pc.createAnswer();
-              await pc.setLocalDescription(answer);
-              ws.send(JSON.stringify({
-                type: 'answer',
-                sdp: answer
-              }));
-            } else if (message.type === 'answer') {
-              // Received answer
-              await pc.setRemoteDescription(new RTCSessionDescription(message.sdp));
-            } else if (message.type === 'ice-candidate') {
-              // Received ICE candidate
-              await pc.addIceCandidate(new RTCIceCandidate(message.candidate));
-            }
-          } catch (err) {
-            console.error('Error handling signaling message:', err);
-          }
-        };
-
-        ws.onerror = (err) => {
-          console.error('WebSocket error:', err);
-          setError('Signaling server connection error');
-        };
+        connectSignaling(pc);
 
       } catch (err) {
         console.error('Error initializing WebRTC:', err);
+        logEvent(TELEMETRY_EVENTS.MEDIA_STREAM_EVENT, { action: 'media_access_error', roomId, error: err.message });
         setError(err.message || 'Error accessing media devices');
       }
     };
@@ -146,7 +162,7 @@ export function useWebRTC(roomId) {
         wsRef.current.close();
       }
     };
-  }, [roomId]);
+  }, [roomId, connectSignaling]);
 
   // Toggle handlers
   const toggleMute = useCallback(() => {

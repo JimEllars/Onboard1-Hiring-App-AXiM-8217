@@ -1,15 +1,17 @@
+import { successResponse, errorResponse, handleOptions, getCorsHeaders } from '../utils/response.js';
+
 export async function onRequestPost({ request, env }) {
   try {
     const signature = request.headers.get('x-cal-signature-256');
     if (!signature) {
-      return new Response(null, { status: 401 });
+      return errorResponse("Unauthorized", "UNAUTHORIZED", 401);
     }
 
     const rawBody = await request.text();
     const secret = env.CALCOM_WEBHOOK_SECRET;
 
     if (!secret) {
-      return new Response(null, { status: 401 });
+      return errorResponse("Webhook secret not configured", "CONFIG_ERROR", 500);
     }
 
     const encoder = new TextEncoder();
@@ -31,10 +33,15 @@ export async function onRequestPost({ request, env }) {
     const expectedSignature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
     if (signature !== expectedSignature) {
-      return new Response(null, { status: 401 });
+      return errorResponse("Invalid signature", "UNAUTHORIZED", 401);
     }
 
-    const data = JSON.parse(rawBody);
+    let data;
+    try {
+      data = JSON.parse(rawBody);
+    } catch (e) {
+      return errorResponse("Invalid JSON payload", "INVALID_PAYLOAD", 400);
+    }
 
     if (data.triggerEvent === 'BOOKING_CREATED') {
       const payload = data.payload || {};
@@ -42,7 +49,6 @@ export async function onRequestPost({ request, env }) {
       const startTime = payload.startTime || data.startTime;
 
       if (candidateId && env.TEMPORAL_REST_ENDPOINT) {
-        // Dispatch signal to Temporal
         await fetch(env.TEMPORAL_REST_ENDPOINT, {
           method: 'POST',
           headers: {
@@ -59,11 +65,11 @@ export async function onRequestPost({ request, env }) {
       }
     }
 
-    return new Response(JSON.stringify({ received: true }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return successResponse({ received: true });
   } catch (err) {
-    return new Response(null, { status: 401 });
+    return errorResponse(err.message, "INTERNAL_ERROR", 500);
   }
+}
+export async function onRequestOptions({ request }) {
+  return handleOptions(request);
 }

@@ -22,6 +22,7 @@ import Reports from './pages/Reports';
 import Profile from './pages/Profile';
 import PublicJobBoard from './pages/PublicJobBoard';
 import ApplicationForm from './pages/ApplicationForm';
+import JobOffer from './pages/JobOffer';
 import ReferralProgram from './pages/ReferralProgram';
 import Questionnaire from './pages/Questionnaire';
 import AsyncVideoInterview from './pages/AsyncVideoInterview';
@@ -37,6 +38,7 @@ function App() {
         <Route path="/apply/video-assessment" element={<AsyncVideoInterview />} />
         <Route path="/apply/schedule" element={<InterviewScheduling />} />
         <Route path="/apply/:id" element={<ApplicationForm />} />
+        <Route path="/offer/:candidateId" element={<JobOffer />} />
 
         {/* Recruiter Portal Routes */}
         <Route path="/portal" element={<Layout />}>

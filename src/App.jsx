@@ -21,6 +21,8 @@ import AutomationSettings from './pages/AutomationSettings';
 import Reports from './pages/Reports';
 import Profile from './pages/Profile';
 import PublicJobBoard from './pages/PublicJobBoard';
+import Login from './pages/Login';
+import ProtectedRoute from './components/ProtectedRoute';
 import ApplicationForm from './pages/ApplicationForm';
 import JobOffer from './pages/JobOffer';
 import ReferralProgram from './pages/ReferralProgram';
@@ -34,6 +36,7 @@ function App() {
       <Routes>
         {/* Candidate Facing Routes */}
         <Route path="/" element={<PublicJobBoard />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/apply/questionnaire" element={<Questionnaire />} />
         <Route path="/apply/video-assessment" element={<AsyncVideoInterview />} />
         <Route path="/apply/schedule" element={<InterviewScheduling />} />
@@ -41,7 +44,7 @@ function App() {
         <Route path="/offer/:candidateId" element={<JobOffer />} />
 
         {/* Recruiter Portal Routes */}
-        <Route path="/portal" element={<Layout />}>
+        <Route path="/portal" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route index element={<Navigate to="/portal/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="jobs" element={<Jobs />} />

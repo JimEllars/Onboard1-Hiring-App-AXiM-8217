@@ -14,10 +14,10 @@ const JobOffer = () => {
     // Check if redirected back from DocuSign with completion event
     const event = searchParams.get('event');
     if (event === 'signing_complete') {
-      setIsComplete(true);
-      setIsLoading(false);
+      handleFinalizeHire(candidateId);
       return;
     }
+
 
     const fetchSigningUrl = async () => {
       try {
@@ -53,13 +53,30 @@ const JobOffer = () => {
     fetchSigningUrl();
   }, [candidateId, searchParams]);
 
+  const handleFinalizeHire = async (id) => {
+    try {
+      setIsLoading(true);
+      const baseUrl = import.meta.env.VITE_API_URL || '';
+      await fetch(`${baseUrl}/api/finalize-hire`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ candidateId: id })
+      });
+    } catch (err) {
+      console.error('Error finalizing hire:', err);
+    } finally {
+      setIsComplete(true);
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     // Listener for messages from iframe if using postMessage
     const handleMessage = (event) => {
       // In embedded signing without redirects, DocuSign can send postMessage
       // But standard returnUrl redirects the iframe. We'll handle both.
       if (event.data && event.data.type === 'docusign_signing_complete') {
-        setIsComplete(true);
+        handleFinalizeHire(candidateId);
       }
     };
 
@@ -108,9 +125,20 @@ const JobOffer = () => {
           <p className="text-lg text-gray-600 mb-8">
             Your offer has been successfully signed. We are thrilled to have you join the team!
           </p>
+          <div className="bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded-md mb-6 text-sm text-left">
+            <p className="font-semibold mb-2">Next Steps:</p>
+            <p>Your candidate profile has been finalized and successfully pushed to AgentView and the Training System.</p>
+            <p className="mt-2">Check your email for your temporary portal access instructions.</p>
+          </div>
+          <button
+            onClick={() => window.location.href = 'https://agentview.axim.com'}
+            className="inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 transition-colors w-full mb-3"
+          >
+            Access AgentView Portal
+          </button>
           <button
             onClick={() => window.location.href = '/'}
-            className="inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"
+            className="inline-flex justify-center items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors w-full"
           >
             Go to Homepage
           </button>

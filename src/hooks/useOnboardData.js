@@ -19,6 +19,31 @@ export const useOnboardData = () => {
   const [candidates, setCandidates] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [session, setSession] = useState(null);
+
+  useEffect(() => {
+    if (!supabase) {
+      setSession(null);
+      return;
+    }
+
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    // Listen to session changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      // Clear data if logged out
+      if (!session) {
+        setJobs([]);
+        setCandidates([]);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -28,6 +53,13 @@ export const useOnboardData = () => {
       if (!supabase) {
         setJobs(MOCK_JOBS);
         setCandidates(MOCK_CANDIDATES);
+        setIsLoading(false);
+        return;
+      }
+
+      // If we are strictly waiting for a session and none exists, don't fetch data yet.
+      // (Unless you want to fetch public data - but for recruiters, wait for session).
+      if (!session) {
         setIsLoading(false);
         return;
       }
@@ -69,7 +101,7 @@ export const useOnboardData = () => {
     };
 
     fetchData();
-  }, []);
+  }, [session]);
 
   const addJob = useCallback((newJob) => {
     setJobs(prev => [{ ...newJob, id: Date.now(), candidates: 0, status: 'Active' }, ...prev]);
@@ -79,6 +111,15 @@ export const useOnboardData = () => {
     setCandidates(prev => prev.map(c => 
       c.id === candidateId ? { ...c, stage: newStage } : c
     ));
+  }, []);
+
+  const logout = useCallback(async () => {
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
+    setSession(null);
+    setJobs([]);
+    setCandidates([]);
   }, []);
 
   const stats = useMemo(() => ({
@@ -123,5 +164,5 @@ export const useOnboardData = () => {
     }
   }, [candidates, updateCandidateStage]);
 
-  return { jobs, candidates, addJob, updateCandidateStage, approveCandidate, stats, isLoading, error };
+  return { jobs, candidates, addJob, updateCandidateStage, approveCandidate, stats, isLoading, error, logout, session };
 };

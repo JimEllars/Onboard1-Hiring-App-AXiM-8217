@@ -9,6 +9,7 @@ const Questionnaire = () => {
   const navigate = useNavigate();
   const verified = searchParams.get('verified');
   const candidateId = searchParams.get('candidateId');
+  const token = searchParams.get('token');
 
   const [formData, setFormData] = useState({
     fit: '',
@@ -39,6 +40,7 @@ const Questionnaire = () => {
         },
         body: JSON.stringify({
           candidateId,
+          token,
           answers: formData
         }),
       });

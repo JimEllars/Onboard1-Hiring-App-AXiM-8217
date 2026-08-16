@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { successResponse, errorResponse, handleOptions, getCorsHeaders } from '../utils/response.js';
+import { verifyMagicLinkToken } from '../utils/auth.js';
 
 export async function onRequestOptions({ request }) {
   return handleOptions(request);
@@ -17,13 +18,21 @@ export async function onRequestPost({ request, env }) {
       return errorResponse("Invalid JSON payload", "INVALID_PAYLOAD", 400, headers);
     }
 
-    if (!payload.candidateId || !payload.answers) {
+    if (!payload.candidateId || !payload.answers || !payload.token) {
       return errorResponse("Missing required fields", "MISSING_FIELDS", 400, headers);
     }
 
     if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) {
       return errorResponse("Supabase credentials are not configured", "CONFIG_ERROR", 500, headers);
     }
+    const jwtSecret = env.JWT_SECRET || 'default-secret-key-for-development';
+    try {
+      await verifyMagicLinkToken(payload.token, jwtSecret);
+    } catch (jwtError) {
+      console.error("JWT verification failed:", jwtError);
+      return errorResponse("Invalid or expired token", "UNAUTHORIZED", 401, headers);
+    }
+
     const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_KEY);
 
     const { data: candidate, error: fetchError } = await supabase

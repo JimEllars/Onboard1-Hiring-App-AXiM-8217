@@ -95,6 +95,8 @@ const AsyncVideoInterview = () => {
         console.log(`Successfully uploaded chunk ${currentChunkIndex} to ${key}`);
       } catch (error) {
         console.error('Chunk upload error:', error);
+        stopRecording();
+        alert('A network error occurred while uploading your video chunk. Recording has been paused.');
         // Note: For a real app we might want to alert the user or retry here
       }
     }
@@ -150,7 +152,14 @@ const AsyncVideoInterview = () => {
         throw new Error('Failed to submit video');
       }
 
+
       setIsSubmitted(true);
+
+      // Dispatch event for Dashboard sync
+      window.dispatchEvent(new CustomEvent('candidate-stage-updated', {
+        detail: { candidateId, newStage: 'Interview Review' }
+      }));
+
       // Wait for a few seconds to show the success message, then navigate to next step
       setTimeout(() => {
         navigate('/apply/schedule');

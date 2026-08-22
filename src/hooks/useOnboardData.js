@@ -103,6 +103,18 @@ export const useOnboardData = () => {
     fetchData();
   }, [session]);
 
+
+  useEffect(() => {
+    const handleStageUpdate = (e) => {
+      const { candidateId, newStage } = e.detail;
+      setCandidates(prev => prev.map(c =>
+        (c.id === candidateId || String(c.id) === String(candidateId)) ? { ...c, stage: newStage } : c
+      ));
+    };
+    window.addEventListener('candidate-stage-updated', handleStageUpdate);
+    return () => window.removeEventListener('candidate-stage-updated', handleStageUpdate);
+  }, []);
+
   const addJob = useCallback((newJob) => {
     setJobs(prev => [{ ...newJob, id: Date.now(), candidates: 0, status: 'Active' }, ...prev]);
   }, []);

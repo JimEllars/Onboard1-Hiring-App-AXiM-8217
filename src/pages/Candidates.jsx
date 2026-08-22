@@ -8,7 +8,7 @@ import { logEvent, TELEMETRY_EVENTS } from '../lib/telemetry';
 
 const { FiSearch, FiFilter, FiDownload, FiStar, FiMail, FiX, FiFile, FiPhone, FiExternalLink, FiGrid, FiList, FiEdit, FiBarChart2, FiActivity, FiChevronRight } = FiIcons;
 
-const stages = ['Screening', 'Technical Task', 'Interview', 'Offer', 'Hired'];
+const stages = ['Applied', 'Fit Survey', 'Video Assessment', 'Live Interview', 'Screening/Checkr', 'Offer/DocuSign', 'Hired'];
 
 const CandidateDetails = ({ candidate, onClose, onEvaluate, onViewScores, onViewProgress, onMoveStage, onApprove, onReject }) => {
   if (!candidate) return null;
@@ -262,7 +262,16 @@ const Candidates = () => {
       ) : (
         <div className="flex gap-8 overflow-x-auto pb-10 scrollbar-hide px-2">
           {stages.map((stage) => (
-            <div key={stage} className="min-w-[340px] w-[340px] flex flex-col gap-6">
+            <div
+              key={stage}
+              className="min-w-[340px] w-[340px] flex flex-col gap-6"
+              onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+              onDrop={(e) => {
+                e.preventDefault();
+                const candidateId = e.dataTransfer.getData('candidateId');
+                if (candidateId) handleMoveStage(candidateId, stage);
+              }}
+            >
               <div className="flex items-center justify-between px-4">
                 <div className="flex items-center gap-3">
                   <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">{stage}</h3>
@@ -275,10 +284,12 @@ const Candidates = () => {
               <div className="bg-slate-50/50 p-4 rounded-[40px] border border-slate-100 min-h-[600px] space-y-4">
                 {filteredCandidates.filter(c => c.stage === stage).map((candidate) => (
                   <motion.div 
+                    draggable
+                    onDragStart={(e) => e.dataTransfer.setData('candidateId', candidate.id)}
                     layoutId={`candidate-${candidate.id}`} 
                     key={candidate.id} 
                     onClick={() => setSelectedCandidate(candidate)}
-                    className="bg-white p-6 rounded-[32px] border border-slate-200 shadow-sm hover:shadow-xl hover:border-blue-500 cursor-pointer transition-all group"
+                    className="bg-white p-6 rounded-[32px] border border-slate-200 shadow-sm hover:shadow-xl hover:border-blue-500 cursor-grab active:cursor-grabbing transition-all group"
                   >
                     <div className="flex items-center gap-4 mb-6">
                       <img src={candidate.avatar} className="w-12 h-12 rounded-2xl object-cover shadow-sm" />
@@ -290,7 +301,7 @@ const Candidates = () => {
                     <div className="flex items-center justify-between pt-4 border-t border-slate-50">
                       <div className="flex text-amber-400 text-[10px] gap-1">
                         {[...Array(5)].map((_, i) => (
-                          <SafeIcon key={i} icon={FiStar} className={i < candidate.rating ? "fill-current" : "text-slate-100"} />
+                          <SafeIcon key={i} icon={FiIcons.FiStar} className={i < (candidate.rating || 0) ? "fill-current" : "text-slate-100"} />
                         ))}
                       </div>
                       <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{candidate.applied}</span>

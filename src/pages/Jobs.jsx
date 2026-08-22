@@ -173,6 +173,23 @@ const Jobs = () => {
 
   return (
     <div className="space-y-8 pb-20">
+      {/* Board/Campaign Hierarchy Section */}
+      <div className="bg-slate-900 text-white p-8 rounded-[32px] flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-xl relative overflow-hidden">
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-2">
+            <h2 className="text-2xl font-black tracking-tight">Active Campaigns & Boards</h2>
+            <span className="px-3 py-1 bg-blue-600/20 text-blue-400 rounded-full text-[10px] font-black uppercase tracking-widest border border-blue-500/30">
+              AXiM Enterprise Super User — Unlimited Boards
+            </span>
+          </div>
+          <p className="text-slate-400 text-sm font-medium">Manage multiple recruiting pipelines and distinct job boards across your organization.</p>
+        </div>
+        <button className="relative z-10 bg-white text-slate-900 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-100 transition-all shadow-lg flex items-center gap-2">
+          <SafeIcon icon={FiPlus} /> New Board
+        </button>
+        <div className="absolute right-0 top-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+      </div>
+
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
           <h2 className="text-3xl font-black text-slate-900 tracking-tight">Job Management</h2>

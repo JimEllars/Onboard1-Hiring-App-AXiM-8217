@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { logEvent, TELEMETRY_EVENTS } from '../lib/telemetry';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
+import { supabase } from '../lib/supabaseClient';
 
-const { FiStar, FiMessageSquare, FiCheck, FiX, FiArrowLeft, FiAlertCircle } = FiIcons;
+const { FiStar, FiMessageSquare, FiCheck, FiX, FiArrowLeft, FiAlertCircle, FiClock, FiShield } = FiIcons;
 
 const CandidateEvaluation = () => {
   const { id } = useParams();
@@ -20,6 +21,31 @@ const CandidateEvaluation = () => {
   const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [backgroundStatus, setBackgroundStatus] = useState(null);
+  const [isTriggeringBgCheck, setIsTriggeringBgCheck] = useState(false);
+  const [bgCheckError, setBgCheckError] = useState(null);
+
+  useEffect(() => {
+    const fetchCandidateStatus = async () => {
+      if (!supabase) return; // Fallback if no supabase client configured
+
+      try {
+        const { data, error } = await supabase
+          .from('onboard1_candidates')
+          .select('background_check_status')
+          .eq('id', id || 'mock-candidate-123')
+          .single();
+
+        if (data && !error) {
+          setBackgroundStatus(data.background_check_status);
+        }
+      } catch (err) {
+        console.error("Failed to fetch candidate background status", err);
+      }
+    };
+
+    fetchCandidateStatus();
+  }, [id]);
 
   const criteria = [
     { key: 'technical', label: 'Technical Proficiency', desc: 'Knowledge of tools, frameworks, and architecture.' },
@@ -30,6 +56,29 @@ const CandidateEvaluation = () => {
 
   const handleRating = (key, value) => {
     setRatings(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleTriggerBackgroundCheck = async () => {
+    setIsTriggeringBgCheck(true);
+    setBgCheckError(null);
+    try {
+      const response = await fetch('/api/trigger-checkr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ candidateId: id || 'mock-candidate-123' })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to trigger background check');
+      }
+
+      setBackgroundStatus('pending');
+    } catch (err) {
+      setBgCheckError(err.message);
+    } finally {
+      setIsTriggeringBgCheck(false);
+    }
   };
 
   const handleSubmit = async (recommendation) => {
@@ -79,6 +128,39 @@ const CandidateEvaluation = () => {
     }
   };
 
+  const getBackgroundCheckUI = () => {
+    if (backgroundStatus === 'clear') {
+      return (
+        <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full text-sm font-semibold">
+          <SafeIcon icon={FiShield} /> Cleared
+        </div>
+      );
+    }
+    if (backgroundStatus === 'pending') {
+      return (
+        <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-1.5 rounded-full text-sm font-semibold">
+          <SafeIcon icon={FiClock} /> Pending Verification
+        </div>
+      );
+    }
+    if (backgroundStatus === 'suspended') {
+      return (
+        <div className="flex items-center gap-2 text-red-600 bg-red-50 px-3 py-1.5 rounded-full text-sm font-semibold">
+          <SafeIcon icon={FiAlertCircle} /> Suspended
+        </div>
+      );
+    }
+    return (
+      <button
+        onClick={handleTriggerBackgroundCheck}
+        disabled={isTriggeringBgCheck}
+        className="flex items-center gap-2 text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-full text-sm font-semibold transition-colors disabled:opacity-50"
+      >
+        <SafeIcon icon={FiShield} /> {isTriggeringBgCheck ? 'Initiating...' : 'Initiate Background Check'}
+      </button>
+    );
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-12 relative">
       <AnimatePresence>
@@ -107,12 +189,23 @@ const CandidateEvaluation = () => {
         <SafeIcon icon={FiArrowLeft} /> Back to Candidates
       </button>
 
+      {bgCheckError && (
+        <div className="bg-red-50 text-red-700 p-4 rounded-xl flex items-center gap-2">
+          <SafeIcon icon={FiAlertCircle} /> {bgCheckError}
+        </div>
+      )}
+
       <div className="bg-white rounded-3xl border border-slate-100 p-8 shadow-sm">
-        <div className="flex items-center gap-6 mb-8 pb-8 border-b border-slate-50">
-          <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" className="w-20 h-20 rounded-2xl object-cover" />
+        <div className="flex items-center gap-6 mb-8 pb-8 border-b border-slate-50 justify-between">
+          <div className="flex items-center gap-6">
+            <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" className="w-20 h-20 rounded-2xl object-cover" />
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900">Eleanor Pena</h2>
+              <p className="text-slate-500 font-medium">Interviewing for <span className="text-blue-600">Senior Frontend Engineer</span></p>
+            </div>
+          </div>
           <div>
-            <h2 className="text-2xl font-bold text-slate-900">Eleanor Pena</h2>
-            <p className="text-slate-500 font-medium">Interviewing for <span className="text-blue-600">Senior Frontend Engineer</span></p>
+            {getBackgroundCheckUI()}
           </div>
         </div>
 
@@ -158,8 +251,9 @@ const CandidateEvaluation = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <button 
               onClick={() => handleSubmit('hire')}
-              disabled={isSubmitting}
-              className="flex items-center justify-center gap-2 px-6 py-4 bg-emerald-600 text-white rounded-2xl font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-100 disabled:opacity-50"
+              disabled={isSubmitting || backgroundStatus !== 'clear'}
+              title={backgroundStatus !== 'clear' ? "Background check must be cleared before offering" : ""}
+              className="flex items-center justify-center gap-2 px-6 py-4 bg-emerald-600 text-white rounded-2xl font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <SafeIcon icon={FiCheck} /> Strong Hire
             </button>

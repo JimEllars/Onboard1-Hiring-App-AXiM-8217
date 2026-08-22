@@ -21,6 +21,7 @@ import AutomationSettings from './pages/AutomationSettings';
 import Reports from './pages/Reports';
 import Profile from './pages/Profile';
 import PublicJobBoard from './pages/PublicJobBoard';
+import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import ProtectedRoute from './components/ProtectedRoute';
 import ApplicationForm from './pages/ApplicationForm';
@@ -35,7 +36,8 @@ function App() {
     <Router>
       <Routes>
         {/* Candidate Facing Routes */}
-        <Route path="/" element={<PublicJobBoard />} />
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/jobs" element={<PublicJobBoard />} />
         <Route path="/login" element={<Login />} />
         <Route path="/apply/questionnaire" element={<Questionnaire />} />
         <Route path="/apply/video-assessment" element={<AsyncVideoInterview />} />

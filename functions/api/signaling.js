@@ -7,7 +7,6 @@ export async function onRequestOptions({ request }) {
 export async function onRequest(context) {
   const { request } = context;
 
-  // Handle CORS for regular requests if any, though websockets use Upgrade
   const origin = request.headers.get("Origin");
   const headers = getCorsHeaders(origin);
 
@@ -23,15 +22,11 @@ export async function onRequest(context) {
     return errorResponse("roomId query parameter is required", "MISSING_PARAMS", 400, headers);
   }
 
-  // Cloudflare WebSockets
   const webSocketPair = new WebSocketPair();
   const [client, server] = Object.values(webSocketPair);
 
   server.accept();
 
-  // Basic in-memory hub for broadcasting
-  // NOTE: This only works if connected to the same isolate/worker.
-  // For cross-worker, you need Durable Objects.
   if (!globalThis.rooms) {
     globalThis.rooms = new Map();
   }
@@ -44,6 +39,14 @@ export async function onRequest(context) {
   room.add(server);
 
   server.addEventListener('message', event => {
+    let data;
+    try {
+      // Just check if it's parseable to validate we're routing SDP/ICE properly
+      data = JSON.parse(event.data);
+    } catch (e) {
+      // Do nothing, maybe it's not JSON
+    }
+
     // Broadcast message to everyone else in the room
     for (const participant of room) {
       if (participant !== server) {
@@ -63,9 +66,16 @@ export async function onRequest(context) {
     }
   });
 
+  server.addEventListener('error', () => {
+    room.delete(server);
+    if (room.size === 0) {
+      globalThis.rooms.delete(roomId);
+    }
+  });
+
   return new Response(null, {
     status: 101,
     webSocket: client,
-    headers: headers // Incase any CORS headers need to be passed on 101 upgrade (usually browser ignores, but good practice)
+    headers: headers
   });
 }

@@ -1,4 +1,12 @@
 import { successResponse, errorResponse, handleOptions, getCorsHeaders } from '../utils/response.js';
+import { z } from 'zod';
+
+const payloadSchema = z.object({
+  triggerEvent: z.string(),
+  payload: z.any().optional(),
+  metadata: z.any().optional(),
+  startTime: z.string().optional()
+}).passthrough();
 
 export async function onRequestPost({ request, env }) {
   try {
@@ -38,12 +46,13 @@ export async function onRequestPost({ request, env }) {
 
     let data;
     try {
-      data = JSON.parse(rawBody);
+      const parsedJSON = JSON.parse(rawBody);
+      data = payloadSchema.parse(parsedJSON);
     } catch (e) {
       return errorResponse("Invalid JSON payload", "INVALID_PAYLOAD", 400);
     }
 
-    if (data.triggerEvent === 'BOOKING_CREATED') {
+    if (data.triggerEvent === 'BOOKING_CREATED' || data.triggerEvent === 'MEETING_ENDED') {
       const payload = data.payload || {};
       const candidateId = payload.metadata?.candidateId || data.metadata?.candidateId;
       const startTime = payload.startTime || data.startTime;
@@ -55,9 +64,10 @@ export async function onRequestPost({ request, env }) {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            signal: 'LiveInterviewScheduledSignal',
+            signal: data.triggerEvent === 'BOOKING_CREATED' ? 'LiveInterviewScheduledSignal' : 'LiveInterviewEndedSignal',
             candidateId,
-            scheduledTime: startTime
+            scheduledTime: startTime,
+            candidateEmail: payload.email || data.email
           })
         }).catch(() => {
            // fail silently as per requirements

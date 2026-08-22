@@ -42,3 +42,24 @@ export async function onRequestPost({ request, env }) {
     return errorResponse(error.message, "INTERNAL_ERROR", 500, headers);
   }
 }
+
+
+export async function onRequestGet({ request, env }) {
+  const url = new URL(request.url);
+  const token = url.searchParams.get('token');
+  const origin = request.headers.get("Origin") || url.origin;
+
+  if (!token) {
+    return Response.redirect(`${origin}/apply/questionnaire?verified=false`, 302);
+  }
+
+  const jwtSecret = env.JWT_SECRET || 'default-secret-key-for-development';
+
+  try {
+    const decoded = await verifyMagicLinkToken(token, jwtSecret);
+    return Response.redirect(`${origin}/apply/questionnaire?verified=true&candidateId=${decoded.candidateId}&token=${token}`, 302);
+  } catch (jwtError) {
+    console.error("JWT verification failed:", jwtError);
+    return Response.redirect(`${origin}/apply/questionnaire?verified=false`, 302);
+  }
+}

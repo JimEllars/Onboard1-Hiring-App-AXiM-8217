@@ -1,5 +1,6 @@
 import { successResponse, errorResponse, handleOptions, getCorsHeaders } from '../utils/response.js';
-import * as jose from 'jose';
+import { createClient } from '@supabase/supabase-js';
+import { v4 as uuidv4 } from 'uuid';
 
 export async function onRequestOptions({ request }) {
   return handleOptions(request);
@@ -17,131 +18,43 @@ export async function onRequestPost({ request, env }) {
       return errorResponse("Invalid JSON payload", "INVALID_PAYLOAD", 400, headers);
     }
 
-    const { candidateId, templateId, role } = payload;
+    const { candidateId, docType } = payload;
     if (!candidateId) {
       return errorResponse("Missing candidateId", "MISSING_CANDIDATE_ID", 400, headers);
     }
 
-    const privateKeyRaw = env.DOCUSIGN_SECRET || env.DOCUSIGN_PRIVATE_KEY;
-
-    if (!env.DOCUSIGN_INTEGRATION_KEY || !env.DOCUSIGN_USER_ID || !privateKeyRaw || !env.DOCUSIGN_ACCOUNT_ID) {
-      return errorResponse("DocuSign credentials are not configured", "SERVICE_UNAVAILABLE", 503, headers);
+    if (!docType || !['W-2', '1099'].includes(docType)) {
+      return errorResponse("Missing or invalid document type (docType must be 'W-2' or '1099')", "INVALID_DOC_TYPE", 400, headers);
     }
 
-    const finalTemplateId = templateId || env.DOCUSIGN_OFFER_TEMPLATE_ID;
+    if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) {
+      return errorResponse("Supabase credentials are not configured", "CONFIG_ERROR", 500, headers);
+    }
+    const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_KEY);
 
-    if (!finalTemplateId) {
-      return errorResponse("DocuSign template ID is not configured", "SERVICE_UNAVAILABLE", 503, headers);
+    // Generate a unique signing token
+    const signingToken = uuidv4();
+
+    // Store token and status in DB
+    const { error: updateError } = await supabase
+      .from('onboard1_candidates')
+      .update({
+        status: 'pending_signature',
+        signing_token: signingToken,
+        doc_type: docType
+      })
+      .eq('id', candidateId);
+
+    if (updateError) {
+      console.error("Failed to update candidate status:", updateError);
+      return errorResponse("Failed to update candidate status", "DB_ERROR", 500, headers);
     }
 
-    // Replace literal '\n' if present in environment variable
-    const privateKey = privateKeyRaw.replace(/\\n/g, '\n');
-
-    const authServer = "account-d.docusign.com";
-    const basePath = "https://demo.docusign.net/restapi";
-
-    // 1. Generate JWT
-    const alg = 'RS256';
-    let pKey;
-    try {
-      pKey = await jose.importPKCS8(privateKey, alg);
-    } catch(err) {
-      return errorResponse("Invalid private key format", "CONFIG_ERROR", 500, headers);
-    }
-
-    const jwt = await new jose.SignJWT({
-      iss: env.DOCUSIGN_INTEGRATION_KEY,
-      sub: env.DOCUSIGN_USER_ID,
-      aud: authServer,
-      scope: "signature"
-    })
-      .setProtectedHeader({ alg })
-      .setIssuedAt()
-      .setExpirationTime('1h')
-      .sign(pKey);
-
-    // 2. Request Access Token
-    const tokenParams = new URLSearchParams();
-    tokenParams.append('grant_type', 'urn:ietf:params:oauth:grant-type:jwt-bearer');
-    tokenParams.append('assertion', jwt);
-
-    const tokenResponse = await fetch(`https://${authServer}/oauth/token`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: tokenParams
-    });
-
-    if (!tokenResponse.ok) {
-      const errorText = await tokenResponse.text();
-      console.error("DocuSign token error:", errorText);
-      return errorResponse("Failed to obtain DocuSign access token", "DOCUSIGN_ERROR", 500, headers);
-    }
-
-    const tokenData = await tokenResponse.json();
-    const accessToken = tokenData.access_token;
-
-    // 3. Create Envelope from Template
-    const envelopeData = {
-      templateId: finalTemplateId,
-      templateRoles: [{
-        email: payload.email || "candidate@example.com", // Fallback if no email provided
-        name: payload.name || "Candidate",
-        roleName: "Candidate",
-        clientUserId: candidateId, // This makes it an embedded signing recipient
-      }],
-      status: "sent"
-    };
-
-    const envelopeResponse = await fetch(`${basePath}/v2.1/accounts/${env.DOCUSIGN_ACCOUNT_ID}/envelopes`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(envelopeData)
-    });
-
-    if (!envelopeResponse.ok) {
-      const errorText = await envelopeResponse.text();
-      console.error("DocuSign envelope error:", errorText);
-      return errorResponse("Failed to create DocuSign envelope", "DOCUSIGN_ERROR", 500, headers);
-    }
-
-    const envelopeInfo = await envelopeResponse.json();
-    const envelopeId = envelopeInfo.envelopeId;
-
-    // 4. Generate Recipient View URL (Embedded Signing URL)
-    // The returnUrl is where DocuSign redirects after signing (usually the iframe parent catches this)
-    // We'll set it to a special endpoint on our own origin
-    const returnUrl = (origin && origin !== '*') ? `${origin}/offer/${candidateId}?event=signing_complete` : `http://localhost:5173/offer/${candidateId}?event=signing_complete`;
-
-    const viewData = {
-      returnUrl: returnUrl,
-      authenticationMethod: "none",
-      email: payload.email || "candidate@example.com",
-      userName: payload.name || "Candidate",
-      clientUserId: candidateId
-    };
-
-    const viewResponse = await fetch(`${basePath}/v2.1/accounts/${env.DOCUSIGN_ACCOUNT_ID}/envelopes/${envelopeId}/views/recipient`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(viewData)
-    });
-
-    if (!viewResponse.ok) {
-      const errorText = await viewResponse.text();
-      console.error("DocuSign recipient view error:", errorText);
-      return errorResponse("Failed to generate DocuSign signing URL", "DOCUSIGN_ERROR", 500, headers);
-    }
-
-    const viewInfo = await viewResponse.json();
+    const baseUrl = (origin && origin !== '*') ? origin : 'http://localhost:5173';
 
     return successResponse({
-      signingUrl: viewInfo.url
+      signingUrl: `${baseUrl}/offer/${candidateId}?token=${signingToken}&type=${docType}`,
+      signingToken
     }, 200, headers);
   } catch (error) {
     console.error("Generate offer error:", error);

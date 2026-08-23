@@ -79,26 +79,36 @@ const Settings = () => {
         <div className="space-y-6">
           <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
             <h4 className="font-bold text-slate-900 mb-2">W-2 Employee Onboarding Packet</h4>
-            <p className="text-sm text-slate-500 mb-4">DocuSign Template ID for standard full-time employees.</p>
-            <input
-              type="text"
-              placeholder="e.g., d3c8a9f0-..."
-              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500"
-              onChange={(e) => localStorage.setItem('docusign_template_id_w2', e.target.value)}
-              defaultValue={localStorage.getItem('docusign_template_id_w2') || ''}
-            />
+            <p className="text-sm text-slate-500 mb-4">Internal Template for standard full-time employees.</p>
+            <div className="flex items-center space-x-3 text-sm text-blue-600 font-medium">
+              <SafeIcon icon={FiShield} />
+              <span>Using Proprietary AXiM e-Sign Engine</span>
+            </div>
+            <select
+              className="mt-4 w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500"
+              onChange={(e) => localStorage.setItem('axim_internal_template_w2', e.target.value)}
+              defaultValue={localStorage.getItem('axim_internal_template_w2') || 'standard_w2'}
+            >
+              <option value="standard_w2">Standard W-2 Agreement</option>
+              <option value="executive_w2">Executive W-2 Agreement</option>
+            </select>
           </div>
 
           <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
             <h4 className="font-bold text-slate-900 mb-2">1099 Contractor Agreement</h4>
-            <p className="text-sm text-slate-500 mb-4">DocuSign Template ID for independent contractors.</p>
-            <input
-              type="text"
-              placeholder="e.g., e7d1b8c2-..."
-              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500"
-              onChange={(e) => localStorage.setItem('docusign_template_id_1099', e.target.value)}
-              defaultValue={localStorage.getItem('docusign_template_id_1099') || ''}
-            />
+            <p className="text-sm text-slate-500 mb-4">Internal Template for independent contractors.</p>
+            <div className="flex items-center space-x-3 text-sm text-blue-600 font-medium">
+              <SafeIcon icon={FiShield} />
+              <span>Using Proprietary AXiM e-Sign Engine</span>
+            </div>
+            <select
+              className="mt-4 w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500"
+              onChange={(e) => localStorage.setItem('axim_internal_template_1099', e.target.value)}
+              defaultValue={localStorage.getItem('axim_internal_template_1099') || 'standard_1099'}
+            >
+              <option value="standard_1099">Standard 1099 Agreement</option>
+              <option value="corp_to_corp">Corp-to-Corp Agreement</option>
+            </select>
           </div>
         </div>
 

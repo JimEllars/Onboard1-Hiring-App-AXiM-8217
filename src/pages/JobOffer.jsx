@@ -27,7 +27,7 @@ const JobOffer = () => {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ candidateId }),
+          body: JSON.stringify({ candidateId, templateId: localStorage.getItem("docusign_template_id_w2") }),
         });
 
         const data = await response.json();
@@ -159,7 +159,7 @@ const JobOffer = () => {
               src={signingUrl}
               title="DocuSign Embedded Signing"
               className="absolute inset-0 w-full h-full border-0"
-              allow="camera; microphone; geolocation"
+              allow="camera; microphone; geolocation" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
             />
           </div>
         )}

@@ -12,6 +12,7 @@ const JobOffer = () => {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
+  const [auditHash, setAuditHash] = useState(null);
 
   useEffect(() => {
     // When generated from standard flow, token and type should be in URL params
@@ -67,7 +68,8 @@ const JobOffer = () => {
         body: JSON.stringify({
           candidateId,
           token,
-          signature
+          signature,
+          documentType: docType
         }),
       });
 
@@ -77,6 +79,9 @@ const JobOffer = () => {
         throw new Error(signData.error?.message || 'Failed to submit signature');
       }
 
+      if (signData.data && signData.data.auditHash) {
+        setAuditHash(signData.data.auditHash);
+      }
       // After successful signing, finalize hire
       await handleFinalizeHire(candidateId);
 
@@ -112,6 +117,12 @@ const JobOffer = () => {
           <p className="text-lg text-gray-600 mb-8">
             Your offer has been successfully signed. We are thrilled to have you join the team!
           </p>
+          {auditHash && (
+            <div className="bg-gray-50 border border-gray-200 text-gray-800 p-4 rounded-md mb-6 text-xs text-left break-all font-mono">
+              <p className="font-semibold mb-1 text-gray-600">Certificate of Completion (Audit Receipt):</p>
+              <p>{auditHash}</p>
+            </div>
+          )}
           <div className="bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded-md mb-6 text-sm text-left">
             <p className="font-semibold mb-2">Next Steps:</p>
             <p>Your candidate profile has been finalized and successfully pushed to AgentView and the Training System.</p>

@@ -13,6 +13,8 @@ const Settings = () => {
     { id: 'team', icon: FiUsers, label: 'Team Members', desc: 'Invite and manage recruiter permissions', path: '/settings/team' },
     { id: 'notifications', icon: FiBell, label: 'Notifications', desc: 'Configure email and slack alert preferences', path: null },
     { id: 'billing', icon: FiCreditCard, label: 'Billing & Plan', desc: 'Manage subscriptions and payment methods', path: null },
+
+    { id: 'workflows', icon: FiEdit2, label: 'Employment Workflows', desc: 'Customize W-2 vs 1099 onboarding templates', path: '/portal/onboarding/workflows' },
     { id: 'integrations', icon: FiGlobe, label: 'Job Boards', desc: 'Connect LinkedIn, Indeed, and social accounts', path: '/settings/integrations' },
     { id: 'security', icon: FiShield, label: 'Security', desc: 'Two-factor auth and access logs', path: null },
   ];
@@ -66,6 +68,42 @@ const Settings = () => {
               <SafeIcon icon={FiChevronRight} className="text-slate-300 group-hover:text-slate-900 group-hover:translate-x-1 transition-all" />
             </motion.div>
           ))}
+        </div>
+      </div>
+
+
+      <div className="bg-white rounded-[40px] shadow-sm border border-slate-100 overflow-hidden mt-8 p-10">
+        <h3 className="text-2xl font-black text-slate-900 mb-6">Employment Workflows & Signature Templates</h3>
+        <p className="text-slate-500 mb-8 font-medium">Customize the required signature templates based on employment type.</p>
+
+        <div className="space-y-6">
+          <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+            <h4 className="font-bold text-slate-900 mb-2">W-2 Employee Onboarding Packet</h4>
+            <p className="text-sm text-slate-500 mb-4">DocuSign Template ID for standard full-time employees.</p>
+            <input
+              type="text"
+              placeholder="e.g., d3c8a9f0-..."
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500"
+              onChange={(e) => localStorage.setItem('docusign_template_id_w2', e.target.value)}
+              defaultValue={localStorage.getItem('docusign_template_id_w2') || ''}
+            />
+          </div>
+
+          <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+            <h4 className="font-bold text-slate-900 mb-2">1099 Contractor Agreement</h4>
+            <p className="text-sm text-slate-500 mb-4">DocuSign Template ID for independent contractors.</p>
+            <input
+              type="text"
+              placeholder="e.g., e7d1b8c2-..."
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500"
+              onChange={(e) => localStorage.setItem('docusign_template_id_1099', e.target.value)}
+              defaultValue={localStorage.getItem('docusign_template_id_1099') || ''}
+            />
+          </div>
+        </div>
+
+        <div className="mt-8">
+            <button className="px-6 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg hover:bg-blue-700 transition-all">Save Workflows</button>
         </div>
       </div>
 

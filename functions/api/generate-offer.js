@@ -17,17 +17,25 @@ export async function onRequestPost({ request, env }) {
       return errorResponse("Invalid JSON payload", "INVALID_PAYLOAD", 400, headers);
     }
 
-    const { candidateId } = payload;
+    const { candidateId, templateId, role } = payload;
     if (!candidateId) {
       return errorResponse("Missing candidateId", "MISSING_CANDIDATE_ID", 400, headers);
     }
 
-    if (!env.DOCUSIGN_INTEGRATION_KEY || !env.DOCUSIGN_USER_ID || !env.DOCUSIGN_PRIVATE_KEY || !env.DOCUSIGN_OFFER_TEMPLATE_ID || !env.DOCUSIGN_ACCOUNT_ID) {
+    const privateKeyRaw = env.DOCUSIGN_SECRET || env.DOCUSIGN_PRIVATE_KEY;
+
+    if (!env.DOCUSIGN_INTEGRATION_KEY || !env.DOCUSIGN_USER_ID || !privateKeyRaw || !env.DOCUSIGN_ACCOUNT_ID) {
       return errorResponse("DocuSign credentials are not configured", "SERVICE_UNAVAILABLE", 503, headers);
     }
 
+    const finalTemplateId = templateId || env.DOCUSIGN_OFFER_TEMPLATE_ID;
+
+    if (!finalTemplateId) {
+      return errorResponse("DocuSign template ID is not configured", "SERVICE_UNAVAILABLE", 503, headers);
+    }
+
     // Replace literal '\n' if present in environment variable
-    const privateKey = env.DOCUSIGN_PRIVATE_KEY.replace(/\\n/g, '\n');
+    const privateKey = privateKeyRaw.replace(/\\n/g, '\n');
 
     const authServer = "account-d.docusign.com";
     const basePath = "https://demo.docusign.net/restapi";
@@ -74,7 +82,7 @@ export async function onRequestPost({ request, env }) {
 
     // 3. Create Envelope from Template
     const envelopeData = {
-      templateId: env.DOCUSIGN_OFFER_TEMPLATE_ID,
+      templateId: finalTemplateId,
       templateRoles: [{
         email: payload.email || "candidate@example.com", // Fallback if no email provided
         name: payload.name || "Candidate",

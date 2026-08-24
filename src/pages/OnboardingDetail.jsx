@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as FiIcons from 'react-icons/fi';
+import { logEvent } from '../lib/telemetry';
 import SafeIcon from '../common/SafeIcon';
 
 const { FiArrowLeft, FiCheckCircle, FiFileText, FiShield, FiCpu, FiMessageSquare, FiClock, FiAlertCircle, FiSettings, FiExternalLink, FiUploadCloud } = FiIcons;
@@ -26,6 +27,43 @@ const OnboardingDetail = () => {
   const [offerType, setOfferType] = useState(mockCandidate.type || 'W-2');
   const [generatedLink, setGeneratedLink] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [pushStatus, setPushStatus] = useState('idle'); // idle, packaging, syncing, success, retry
+  const [pushError, setPushError] = useState(null);
+
+
+  const handlePushToOperations = async () => {
+    setPushStatus('packaging');
+    setPushError(null);
+    logEvent('handoff_attempt_started', { candidateId: id || mockCandidate.id });
+
+    // Simulate slight delay for "Packaging Dossier"
+    await new Promise(resolve => setTimeout(resolve, 800));
+    setPushStatus('syncing');
+
+    try {
+      const baseUrl = import.meta.env.VITE_API_URL || '';
+      const response = await fetch(`${baseUrl}/api/finalize-hire`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          candidateId: id || mockCandidate.id
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to push to operations');
+      }
+
+      setPushStatus('success');
+      logEvent('handoff_attempt_success', { candidateId: id || mockCandidate.id });
+    } catch (err) {
+      setPushStatus('retry');
+      setPushError(err.message);
+      logEvent('handoff_attempt_failed', { candidateId: id || mockCandidate.id, error: err.message });
+    }
+  };
 
   const handleGenerateOffer = async () => {
     setIsGenerating(true);
@@ -76,7 +114,29 @@ const OnboardingDetail = () => {
           </div>
           <p className="text-slate-500 font-medium text-lg mt-2">{mockCandidate.role} • Starts {mockCandidate.startDate}</p>
         </div>
+
         <div className="flex gap-3">
+          <button
+            onClick={handlePushToOperations}
+            disabled={pushStatus === 'packaging' || pushStatus === 'syncing' || pushStatus === 'success'}
+            className={`px-6 py-3 rounded-2xl font-bold transition-all shadow-xl flex items-center gap-2 ${
+              pushStatus === 'success' ? 'bg-emerald-600 text-white shadow-emerald-200' :
+              pushStatus === 'retry' ? 'bg-amber-500 text-white shadow-amber-200' :
+              'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200'
+            }`}
+          >
+            <SafeIcon icon={
+              pushStatus === 'success' ? FiCheckCircle :
+              pushStatus === 'retry' ? FiAlertCircle :
+              pushStatus === 'packaging' || pushStatus === 'syncing' ? FiClock :
+              FiCpu
+            } />
+            {pushStatus === 'idle' && 'Finalize & Push to Operations'}
+            {pushStatus === 'packaging' && 'Packaging Dossier...'}
+            {pushStatus === 'syncing' && 'Syncing to AgentView...'}
+            {pushStatus === 'success' && 'Transferred Successfully'}
+            {pushStatus === 'retry' && 'Retry Queued'}
+          </button>
           <button onClick={() => setShowGenerateOffer(true)} className="px-6 py-3 bg-white border-2 border-slate-200 text-slate-700 rounded-2xl font-bold hover:border-slate-300 hover:bg-slate-50 transition-all">
             Generate Offer Link
           </button>
@@ -84,6 +144,7 @@ const OnboardingDetail = () => {
             <SafeIcon icon={FiMessageSquare} /> Send Message
           </button>
         </div>
+
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

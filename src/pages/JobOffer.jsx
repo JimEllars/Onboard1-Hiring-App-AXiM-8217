@@ -30,6 +30,11 @@ const JobOffer = () => {
     }
   }, [candidateId, searchParams]);
 
+
+  const printSignedAgreement = () => {
+    window.print();
+  };
+
   const handleFinalizeHire = async (id) => {
     try {
       setIsLoading(true);
@@ -107,7 +112,58 @@ const JobOffer = () => {
         animate={{ opacity: 1, y: 0 }}
         className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4"
       >
-        <div className="bg-white p-10 rounded-2xl shadow-xl max-w-lg w-full text-center">
+        <div className="bg-white p-10 rounded-2xl shadow-xl max-w-lg w-full text-center print:hidden">
+
+          {/* Print Only View */}
+          <div className="hidden print:block text-left text-black bg-white p-8 absolute top-0 left-0 right-0 z-50 min-h-screen">
+            <h1 className="text-3xl font-bold text-center mb-6 border-b pb-4">
+               {docType === 'W-2' ? 'W-2 Employment Agreement' : '1099 Independent Contractor Agreement'}
+            </h1>
+            <p className="text-right text-sm mb-4">Date: {new Date().toLocaleDateString()}</p>
+            <p className="mb-4">This Agreement is entered into between AXiM Corporation ("Company") and the individual electronically signing below ("Candidate").</p>
+
+            {docType === 'W-2' ? (
+              <div className="space-y-4 mb-8">
+                <h3 className="font-bold">1. Employment Status</h3>
+                <p>Candidate is hired as a W-2 Employee of the Company. Candidate will be subject to all standard employment policies, withholdings, and benefits applicable to full-time employees.</p>
+                <h3 className="font-bold">2. Compensation</h3>
+                <p>Compensation will be provided in accordance with the official offer letter provided to Candidate. Appropriate federal, state, and local taxes will be withheld.</p>
+                <h3 className="font-bold">3. At-Will Employment</h3>
+                <p>Employment with the Company is "at-will," meaning that either Candidate or Company may terminate the employment relationship at any time, with or without cause or advance notice.</p>
+              </div>
+            ) : (
+              <div className="space-y-4 mb-8">
+                <h3 className="font-bold">1. Independent Contractor Status</h3>
+                <p>Candidate is engaged as an Independent Contractor (1099). Candidate is not an employee, agent, or partner of the Company. Candidate is solely responsible for all taxes, withholdings, and insurance.</p>
+                <h3 className="font-bold">2. Services & Compensation</h3>
+                <p>Candidate shall provide services as described in the applicable Statement of Work. Payment will be made upon completion of milestones or on a schedule as agreed upon, without any tax deductions.</p>
+                <h3 className="font-bold">3. Term and Termination</h3>
+                <p>This agreement shall commence on the date signed and continue until terminated by either party with appropriate notice as specified in the underlying contract documents.</p>
+              </div>
+            )}
+
+            <h3 className="font-bold mb-2">4. Confidentiality</h3>
+            <p className="mb-8">Candidate agrees to maintain the confidentiality of all proprietary business information, trade secrets, and client data belonging to the Company during and after the term of this agreement.</p>
+
+            <div className="border-t pt-8 mt-8">
+              <h2 className="text-xl font-bold mb-4">Execution & Audit Certificate</h2>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="font-bold text-gray-600">Electronic Signature:</p>
+                  <p className="font-serif italic text-lg">{signature}</p>
+                </div>
+                <div>
+                  <p className="font-bold text-gray-600">Timestamp:</p>
+                  <p>{new Date().toISOString()}</p>
+                </div>
+                <div className="col-span-2">
+                  <p className="font-bold text-gray-600">Cryptographic Verification Token (SHA-256):</p>
+                  <p className="font-mono text-xs break-all bg-gray-50 p-2 rounded">{auditHash}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <svg className="w-10 h-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -128,8 +184,16 @@ const JobOffer = () => {
             <p>Your candidate profile has been finalized and successfully pushed to AgentView and the Training System.</p>
             <p className="mt-2">Check your email for your temporary portal access instructions.</p>
           </div>
+
+          <button
+            onClick={printSignedAgreement}
+            className="inline-flex justify-center items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors w-full mb-3 print:hidden"
+          >
+            Download / Print Signed Agreement
+          </button>
           <button
             onClick={() => window.location.href = 'https://agentview.axim.com'}
+
             className="inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 transition-colors w-full mb-3"
           >
             Access AgentView Portal

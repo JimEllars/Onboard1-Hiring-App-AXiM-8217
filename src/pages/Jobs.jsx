@@ -170,21 +170,28 @@ const Jobs = () => {
   const { jobs, addJob } = useOnboardData();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const navigate = useNavigate();
+  const [isSuperUser, setIsSuperUser] = useState(false); // Toggle for demo purposes
+
+  const maxBoards = 3;
+  const currentBoards = jobs.length;
+  const canCreateBoard = isSuperUser || currentBoards < maxBoards;
 
   return (
     <div className="space-y-8 pb-20">
       {/* Board/Campaign Hierarchy Section */}
       <div className="bg-slate-900 text-white p-8 rounded-[32px] flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-xl relative overflow-hidden">
         <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-2">
+          <div className="flex items-center gap-3 mb-2 cursor-pointer" onClick={() => setIsSuperUser(!isSuperUser)}>
             <h2 className="text-2xl font-black tracking-tight">Active Campaigns & Boards</h2>
-            <span className="px-3 py-1 bg-blue-600/20 text-blue-400 rounded-full text-[10px] font-black uppercase tracking-widest border border-blue-500/30">
-              AXiM Enterprise Super User — Unlimited Boards
-            </span>
+            {isSuperUser ? (
+              <span className="px-3 py-1 bg-blue-600/20 text-blue-400 rounded-full text-[10px] font-black uppercase tracking-widest border border-blue-500/30">AXiM Enterprise Super User — Unlimited Boards</span>
+            ) : (
+              <span className="px-3 py-1 bg-slate-700 text-slate-300 rounded-full text-[10px] font-black uppercase tracking-widest border border-slate-600">Standard Organization — {currentBoards}/{maxBoards} Boards</span>
+            )}
           </div>
           <p className="text-slate-400 text-sm font-medium">Manage multiple recruiting pipelines and distinct job boards across your organization.</p>
         </div>
-        <button className="relative z-10 bg-white text-slate-900 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-100 transition-all shadow-lg flex items-center gap-2">
+        <button disabled={!canCreateBoard} className={`relative z-10 bg-white text-slate-900 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-lg flex items-center gap-2 ${!canCreateBoard ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-100'}`}>
           <SafeIcon icon={FiPlus} /> New Board
         </button>
         <div className="absolute right-0 top-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
@@ -196,8 +203,9 @@ const Jobs = () => {
           <p className="text-slate-500 mt-1 font-medium">Create, publish, and manage your organization's open positions.</p>
         </div>
         <button 
-          onClick={() => setIsModalOpen(true)} 
-          className="bg-slate-900 hover:bg-slate-800 text-white px-8 py-3.5 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center gap-3 transition-all shadow-xl shadow-slate-200" 
+          onClick={() => { if(canCreateBoard) setIsModalOpen(true); }}
+          disabled={!canCreateBoard}
+          className={`bg-slate-900 text-white px-8 py-3.5 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center gap-3 transition-all shadow-xl shadow-slate-200 ${!canCreateBoard ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-800'}`}
         >
           <SafeIcon icon={FiPlus} /> Create New Position
         </button>
@@ -265,8 +273,9 @@ const Jobs = () => {
         ))}
 
         <button 
-          onClick={() => setIsModalOpen(true)}
-          className="bg-white border-4 border-dashed border-slate-100 rounded-[40px] p-10 flex flex-col items-center justify-center text-slate-400 hover:border-blue-500 hover:text-blue-600 transition-all group min-h-[400px]"
+          onClick={() => { if(canCreateBoard) setIsModalOpen(true); }}
+          disabled={!canCreateBoard}
+          className={`bg-white border-4 border-dashed border-slate-100 rounded-[40px] p-10 flex flex-col items-center justify-center text-slate-400 transition-all group min-h-[400px] ${!canCreateBoard ? 'opacity-50 cursor-not-allowed' : 'hover:border-blue-500 hover:text-blue-600'}`}
         >
           <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-blue-50 transition-all">
             <SafeIcon icon={FiPlus} className="text-3xl" />

@@ -12,3 +12,18 @@ Successfully implemented the proprietary e-signature workflow and custom documen
 ## Verification
 * A Playwright script was used to visually verify that the workflow for generating links, reviewing the document options, and submitting a signature via the URL performs correctly and accurately maps data.
 * `npm run build` executes without errors.
+
+
+## Sprint 2.3 Completion Notes
+
+## Overview
+Successfully implemented dynamic workflow step building and organizational quotas.
+
+## Key Changes
+1. **Pipeline Step Configuration**: Added step builder toggles to `OnboardingWorkflows.jsx` and `AutomationSettings.jsx` (Questionnaire, Video, WebRTC, Background, E-Sign Template) which saves to context via `useOnboardData`.
+2. **Candidate Portal Step Resolver**: Modified `CandidateProgress.jsx` to read the active workflow config, dynamically adjust visual stepper, and route the candidate directly to their next incomplete active step.
+3. **Multi-Tenant Quotas**: Updated `Jobs.jsx` and `Topbar.jsx` to reflect AXiM Enterprise Super User vs Standard Organization context. Standard Orgs are limited to 3 boards.
+
+## Verification
+* A clean build (`npm run build`) successfully executes.
+* Tested the limit mechanism by toggling super user status to enforce strict caps visually on dashboard creation functions.

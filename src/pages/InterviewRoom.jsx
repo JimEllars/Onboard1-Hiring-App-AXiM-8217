@@ -6,7 +6,7 @@ import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 import { logEvent, TELEMETRY_EVENTS } from '../lib/telemetry';
 
-const { FiMic, FiMicOff, FiVideo, FiVideoOff, FiPhone, FiMessageSquare, FiUsers, FiSettings, FiMaximize, FiX, FiCheck, FiStar, FiCode, FiEdit3, FiTerminal } = FiIcons;
+const { FiMic, FiMicOff, FiVideo, FiVideoOff, FiPhone, FiMessageSquare, FiUsers, FiSettings, FiMaximize, FiX, FiCheck, FiStar, FiCode, FiEdit3, FiTerminal, FiMonitor } = FiIcons;
 
 const InterviewRoom = () => {
   const navigate = useNavigate();
@@ -24,7 +24,9 @@ const InterviewRoom = () => {
     isMuted,
     isVideoOff,
     toggleMute,
-    toggleVideo
+    toggleVideo,
+    isScreenSharing,
+    toggleScreenShare
   } = useWebRTC(interviewId || 'default-room');
 
   // Refs for video elements
@@ -47,7 +49,10 @@ const InterviewRoom = () => {
 
   useEffect(() => {
     const interval = setInterval(() => setTimer(t => t + 1), 1000);
-    if (error && error.includes('media devices')) {
+    return () => clearInterval(interval);
+  }, []);
+
+  if (error && error.includes('media devices')) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6 text-white font-sans">
         <div className="bg-slate-900 border border-slate-800 p-8 rounded-[32px] text-center max-w-md shadow-2xl">
@@ -86,9 +91,6 @@ const InterviewRoom = () => {
       </div>
     );
   }
-
-  return () => clearInterval(interval);
-  }, []);
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -200,8 +202,28 @@ const InterviewRoom = () => {
                 />
               </>
             ) : (
-              <div className="p-8 space-y-6">
-                <h3 className="text-xl font-bold flex items-center gap-3">
+              <div className="p-8 space-y-6 flex flex-col h-full overflow-y-auto">
+                <div className="flex items-center gap-4 border-b border-white/5 pb-6">
+                  <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" className="w-16 h-16 rounded-2xl object-cover" />
+                  <div>
+                    <h3 className="text-xl font-bold text-white">Eleanor Pena</h3>
+                    <p className="text-blue-400 text-sm">Candidate - Senior Frontend Engineer</p>
+                  </div>
+                  <button className="ml-auto bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl text-xs font-bold transition-all">
+                    View Resume
+                  </button>
+                </div>
+
+                <div>
+                    <h4 className="text-sm font-bold text-slate-300 mb-3 flex items-center gap-2"><SafeIcon icon={FiMessageSquare} className="text-blue-500"/> Suggested Prompts</h4>
+                    <ul className="text-xs text-slate-400 space-y-2 list-disc pl-4">
+                        <li>Tell me about a time you had to optimize a React application.</li>
+                        <li>How do you handle state management in large scale apps?</li>
+                        <li>Describe your experience with WebRTC or video streaming.</li>
+                    </ul>
+                </div>
+
+                <h3 className="text-xl font-bold flex items-center gap-3 pt-4 border-t border-white/5">
                   <SafeIcon icon={FiEdit3} className="text-blue-500" /> Interviewer Notes
                 </h3>
                 <div className="space-y-4">
@@ -240,6 +262,12 @@ const InterviewRoom = () => {
             className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${isVideoOff ? 'bg-red-500 text-white' : 'bg-white/10 hover:bg-white/20'}`}
           >
             <SafeIcon icon={isVideoOff ? FiVideoOff : FiVideo} />
+          </button>
+          <button
+            onClick={() => { toggleScreenShare(); logEvent(TELEMETRY_EVENTS.MEDIA_STREAM_EVENT, { action: 'toggle_screen_share', state: !isScreenSharing, roomId: interviewId }); }}
+            className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${isScreenSharing ? 'bg-blue-500 text-white' : 'bg-white/10 hover:bg-white/20'}`}
+          >
+            <SafeIcon icon={FiMonitor} />
           </button>
         </div>
 

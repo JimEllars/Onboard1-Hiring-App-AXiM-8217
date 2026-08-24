@@ -17,7 +17,7 @@ export async function onRequestPost({ request, env }) {
       return errorResponse("Invalid JSON payload", "INVALID_PAYLOAD", 400, headers);
     }
 
-    const { candidateId, token, signature, ipAddress } = payload;
+    const { candidateId, token, signature, ipAddress, documentType } = payload;
     if (!candidateId || !token || !signature) {
       return errorResponse("Missing required fields", "MISSING_FIELDS", 400, headers);
     }
@@ -42,11 +42,26 @@ export async function onRequestPost({ request, env }) {
       return errorResponse("Invalid or expired signing token", "INVALID_TOKEN", 403, headers);
     }
 
+    const timestamp = new Date().toISOString();
+    const ip = ipAddress || request.headers.get('CF-Connecting-IP') || 'unknown';
+    const docType = documentType || 'unknown';
+
+    // Compute SHA-256 hash
+    const crypto = globalThis.crypto;
+    const hashInput = `${candidateId}|${docType}|${signature}|${timestamp}|${ip}`;
+    const encoder = new TextEncoder();
+    const data = encoder.encode(hashInput);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const auditHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
     // Process signature
     const signatureRecord = {
       signature_text: signature,
-      timestamp: new Date().toISOString(),
-      ip_address: ipAddress || request.headers.get('CF-Connecting-IP') || 'unknown',
+      timestamp: timestamp,
+      ip_address: ip,
+      audit_hash: auditHash,
+      document_type: docType
     };
 
     // Clear token, update status, save signature
@@ -65,7 +80,8 @@ export async function onRequestPost({ request, env }) {
     }
 
     return successResponse({
-      message: "Signature successfully recorded"
+      message: "Signature successfully recorded",
+      auditHash: auditHash
     }, 200, headers);
   } catch (error) {
     console.error("Sign offer error:", error);

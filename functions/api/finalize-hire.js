@@ -39,9 +39,25 @@ export async function onRequestPost({ request, env }) {
       return errorResponse("Candidate not found", "NOT_FOUND", 404, headers);
     }
 
+    // Package the complete candidate dossier
+    const candidateDossier = {
+      candidateId: candidate.id,
+      profile: {
+        fullName: candidate.full_name,
+        email: candidate.email,
+        resumeUrl: candidate.resume_url,
+      },
+      clearance: {
+        checkrToken: candidate.checkr_token || null,
+        status: candidate.checkr_status || 'cleared'
+      },
+      signature: candidate.signature_data || null,
+      auditTimestamp: new Date().toISOString()
+    };
+
     // Sync payload to downstream services concurrently or sequentially
-    const agentViewPromise = syncPayload(env.AGENTVIEW_API_URL || 'https://mock.agentview.com/api', candidate, { serviceName: 'AgentView' });
-    const trainingPromise = syncPayload(env.TRAINING_API_URL || 'https://mock.training.com/api', candidate, { serviceName: 'Training System' });
+    const agentViewPromise = syncPayload(env.AGENTVIEW_WEBHOOK_URL || env.AGENTVIEW_API_URL || 'https://mock.agentview.com/api', candidateDossier, { serviceName: 'AgentView' });
+    const trainingPromise = syncPayload(env.TRAINING_API_URL || 'https://mock.training.com/api', candidateDossier, { serviceName: 'Training System' });
 
     // Wait for both to complete
     const [agentViewResult, trainingResult] = await Promise.all([agentViewPromise, trainingPromise]);

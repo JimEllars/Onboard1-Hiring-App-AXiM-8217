@@ -3,10 +3,38 @@ import { motion } from 'framer-motion';
 import ReactECharts from 'echarts-for-react';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
+import { useOnboardData } from '../hooks/useOnboardData';
 
 const { FiTrendingUp, FiClock, FiTarget, FiFilter, FiCalendar, FiDownload } = FiIcons;
 
 const JobAnalytics = () => {
+  const { candidates = [], jobs = [], isLoading } = useOnboardData();
+
+  // Calculate dynamic stats
+  const totalApplicants = candidates.length || 100; // prevent div by zero for mock
+
+  // Real funnels or fallbacks
+  const screenedCount = candidates.filter(c => ['Screening', 'Interview', 'Technical Task', 'Offer', 'Hired', 'signed', 'approved', 'cleared'].includes(c.stage || c.status)).length;
+  const interviewCount = candidates.filter(c => ['Interview', 'Technical Task', 'Offer', 'Hired', 'signed', 'approved', 'cleared'].includes(c.stage || c.status)).length;
+  const offerCount = candidates.filter(c => ['Offer', 'Hired', 'signed', 'approved', 'cleared'].includes(c.stage || c.status)).length;
+  const hiredCount = candidates.filter(c => ['Hired', 'signed', 'Hired - Sync Complete'].includes(c.stage || c.status)).length;
+
+  const dynamicFunnelData = candidates.length > 0 ? [
+    { value: 100, name: 'Sourced', itemStyle: { color: '#94a3b8' } },
+    { value: 100, name: 'Applied', itemStyle: { color: '#60a5fa' } },
+    { value: Math.round((screenedCount / totalApplicants) * 100), name: 'Screened', itemStyle: { color: '#818cf8' } },
+    { value: Math.round((interviewCount / totalApplicants) * 100), name: 'Interviewed', itemStyle: { color: '#a78bfa' } },
+    { value: Math.round((offerCount / totalApplicants) * 100), name: 'Offered', itemStyle: { color: '#34d399' } },
+    { value: Math.round((hiredCount / totalApplicants) * 100), name: 'Hired', itemStyle: { color: '#059669' } }
+  ] : [
+    { value: 100, name: 'Sourced', itemStyle: { color: '#94a3b8' } },
+    { value: 80, name: 'Applied', itemStyle: { color: '#60a5fa' } },
+    { value: 60, name: 'Screened', itemStyle: { color: '#818cf8' } },
+    { value: 40, name: 'Interviewed', itemStyle: { color: '#a78bfa' } },
+    { value: 20, name: 'Offered', itemStyle: { color: '#34d399' } },
+    { value: 12, name: 'Hired', itemStyle: { color: '#059669' } }
+  ];
+
   // Funnel Chart Configuration
   const funnelOption = {
     tooltip: { trigger: 'item', formatter: '{a} <br/>{b} : {c}%' },
@@ -28,14 +56,7 @@ const JobAnalytics = () => {
         labelLine: { show: false },
         itemStyle: { borderColor: '#fff', borderWidth: 1 },
         emphasis: { label: { fontSize: 14 } },
-        data: [
-          { value: 100, name: 'Sourced', itemStyle: { color: '#94a3b8' } },
-          { value: 80, name: 'Applied', itemStyle: { color: '#60a5fa' } },
-          { value: 60, name: 'Screened', itemStyle: { color: '#818cf8' } },
-          { value: 40, name: 'Interviewed', itemStyle: { color: '#a78bfa' } },
-          { value: 20, name: 'Offered', itemStyle: { color: '#34d399' } },
-          { value: 12, name: 'Hired', itemStyle: { color: '#059669' } }
-        ]
+        data: dynamicFunnelData
       }
     ]
   };

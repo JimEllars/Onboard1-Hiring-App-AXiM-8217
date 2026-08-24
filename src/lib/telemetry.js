@@ -10,6 +10,27 @@ export const TELEMETRY_EVENTS = {
   AUTOMATION_TRIGGER_EVENT: 'automation_trigger_event',
 };
 
+// Funnel helper triggers
+export const trackSurveyCompleted = (candidateId, metadata = {}) => {
+  logEvent(TELEMETRY_EVENTS.CANDIDATE_PIPELINE_EVENT, { stage: 'survey_completed', candidateId, ...metadata });
+};
+
+export const trackVideoUploaded = (candidateId, metadata = {}) => {
+  logEvent(TELEMETRY_EVENTS.CANDIDATE_PIPELINE_EVENT, { stage: 'video_uploaded', candidateId, ...metadata });
+};
+
+export const trackInterviewScheduled = (candidateId, metadata = {}) => {
+  logEvent(TELEMETRY_EVENTS.CANDIDATE_PIPELINE_EVENT, { stage: 'interview_scheduled', candidateId, ...metadata });
+};
+
+export const trackCheckrCleared = (candidateId, metadata = {}) => {
+  logEvent(TELEMETRY_EVENTS.CANDIDATE_PIPELINE_EVENT, { stage: 'checkr_cleared', candidateId, ...metadata });
+};
+
+export const trackOfferSigned = (candidateId, metadata = {}) => {
+  logEvent(TELEMETRY_EVENTS.CANDIDATE_PIPELINE_EVENT, { stage: 'offer_signed', candidateId, ...metadata });
+};
+
 export const logEvent = (eventName, data = {}) => {
   if (typeof window === 'undefined') {
     return;

@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { successResponse, errorResponse, handleOptions, getCorsHeaders } from '../utils/response.js';
+import { sendStageAdvancementEmail } from '../utils/email.js';
 
 export async function onRequestOptions({ request }) {
   return handleOptions(request);
@@ -17,7 +18,7 @@ export async function onRequestPost({ request, env }) {
       return errorResponse("Invalid JSON payload", "INVALID_PAYLOAD", 400, headers);
     }
 
-    if (!payload.candidateId || !payload.scores || !payload.recommendation) {
+    if (!payload.candidateId || !payload.interviewerId || !payload.recommendation) {
       return errorResponse("Missing required fields", "MISSING_FIELDS", 400, headers);
     }
 
@@ -40,9 +41,12 @@ export async function onRequestPost({ request, env }) {
       .from('onboard1_evaluations')
       .insert({
         candidate_id: payload.candidateId,
-        scores: payload.scores,
+        interviewer_id: payload.interviewerId,
+        technical_score: payload.technicalScore || 0,
+        culture_score: payload.culturalFitScore || 0,
+        criteria_ratings: payload.criteriaRatings || {},
         recommendation: payload.recommendation,
-        notes: payload.notes || ''
+        notes: payload.notes || payload.feedbackNotes || ''
       });
 
     if (insertError) {
@@ -50,7 +54,13 @@ export async function onRequestPost({ request, env }) {
       return errorResponse("Failed to save evaluation data", "DB_ERROR", 500, headers);
     }
 
-    const newStatus = payload.recommendation === 'advance' ? 'offer' : 'rejected';
+    let newStatus = 'rejected';
+    if (payload.recommendation === 'hire' || payload.recommendation === 'advance') {
+      newStatus = 'Recommended for Offer';
+    } else if (payload.recommendation === 'maybe') {
+      newStatus = 'Screening';
+    }
+
     const { error: updateError } = await supabase
       .from('onboard1_candidates')
       .update({ status: newStatus })
@@ -59,6 +69,21 @@ export async function onRequestPost({ request, env }) {
     if (updateError) {
       console.error("Failed to update candidate status", updateError);
       return errorResponse("Failed to update candidate status", "DB_ERROR", 500, headers);
+    }
+
+
+    // Send email notification based on recommendation
+    try {
+        const candidateEmail = candidate?.email || 'candidate@example.com';
+        const dummyToken = 'magic_link_dummy_token_123';
+        if (newStatus === 'Recommended for Offer') {
+            await sendStageAdvancementEmail(candidateEmail, 'offer', dummyToken, env, origin);
+        } else if (newStatus === 'Screening') {
+            await sendStageAdvancementEmail(candidateEmail, 'video-assessment', dummyToken, env, origin);
+        }
+    } catch (emailErr) {
+        console.error("Failed to send stage advancement email", emailErr);
+        // Do not fail the whole request
     }
 
     if (env.TEMPORAL_REST_ENDPOINT) {

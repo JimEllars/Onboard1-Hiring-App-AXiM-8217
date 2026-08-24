@@ -89,7 +89,9 @@ const CandidateEvaluation = () => {
     const payload = {
       candidateId: id || 'mock-candidate-123',
       interviewerId: 'interviewer-123',
-      score: score,
+      technicalScore: ratings['technical'] || 0,
+      culturalFitScore: ratings['culture'] || 0,
+      criteriaRatings: ratings,
       recommendation,
       feedbackNotes: comment
     };

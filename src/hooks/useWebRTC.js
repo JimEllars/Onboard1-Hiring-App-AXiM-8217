@@ -76,6 +76,7 @@ export function useWebRTC(roomId) {
   // Track states for UI
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
 
   useEffect(() => {
     if (!roomId) return;
@@ -174,6 +175,47 @@ export function useWebRTC(roomId) {
     }
   }, [localStream]);
 
+  const toggleScreenShare = useCallback(async () => {
+    try {
+      if (!isScreenSharing) {
+        const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+        const screenTrack = screenStream.getVideoTracks()[0];
+
+        if (pcRef.current) {
+          const sender = pcRef.current.getSenders().find(s => s.track.kind === 'video');
+          if (sender) {
+            sender.replaceTrack(screenTrack);
+          }
+        }
+
+        // Update local video element with screen share stream if needed
+        if (localStreamRef.current) {
+            // Keep original track to revert later
+            localStreamRef.current.addTrack(screenTrack);
+        }
+
+        screenTrack.onended = () => {
+           // revert to video
+           toggleScreenShare();
+        };
+
+        setIsScreenSharing(true);
+      } else {
+        // Revert to camera
+        const cameraTrack = localStream.getVideoTracks().find(t => t.label.toLowerCase().includes('camera') || !t.label.includes('screen'));
+        if (pcRef.current && cameraTrack) {
+           const sender = pcRef.current.getSenders().find(s => s.track?.kind === 'video');
+           if (sender) {
+             sender.replaceTrack(cameraTrack);
+           }
+        }
+        setIsScreenSharing(false);
+      }
+    } catch (err) {
+      console.error('Error toggling screen share:', err);
+    }
+  }, [isScreenSharing, localStream]);
+
   const toggleVideo = useCallback(() => {
     if (localStream) {
       localStream.getVideoTracks().forEach(track => {
@@ -190,6 +232,8 @@ export function useWebRTC(roomId) {
     isMuted,
     isVideoOff,
     toggleMute,
-    toggleVideo
+    toggleVideo,
+    isScreenSharing,
+    toggleScreenShare
   };
 }

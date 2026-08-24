@@ -115,6 +115,46 @@ export const useOnboardData = () => {
     return () => window.removeEventListener('candidate-stage-updated', handleStageUpdate);
   }, []);
 
+
+  useEffect(() => {
+    // Connect to SSE event stream
+    let eventSource;
+    try {
+      eventSource = new EventSource('/api/events');
+
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+
+          // Handle specific events
+          if (data.type === 'candidate_updated') {
+             // In a real app we'd update state here
+             console.log('Candidate updated event received:', data);
+          } else if (data.type === 'evaluation_submitted') {
+             console.log('Evaluation submitted event received:', data);
+          } else if (data.type === 'offer_signed') {
+             console.log('Offer signed event received:', data);
+          }
+        } catch (err) {
+          console.warn('Failed to parse SSE data', err);
+        }
+      };
+
+      eventSource.onerror = (err) => {
+        console.warn('SSE disconnected, falling back to silent state', err);
+        eventSource.close();
+      };
+    } catch (err) {
+       console.warn('Failed to connect to SSE stream', err);
+    }
+
+    return () => {
+      if (eventSource) {
+        eventSource.close();
+      }
+    };
+  }, []);
+
   const addJob = useCallback((newJob) => {
     setJobs(prev => [{ ...newJob, id: Date.now(), candidates: 0, status: 'Active' }, ...prev]);
   }, []);

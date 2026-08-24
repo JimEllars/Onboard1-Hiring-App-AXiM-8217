@@ -24,6 +24,8 @@ const CandidateEvaluation = () => {
   const [backgroundStatus, setBackgroundStatus] = useState(null);
   const [isTriggeringBgCheck, setIsTriggeringBgCheck] = useState(false);
   const [bgCheckError, setBgCheckError] = useState(null);
+  const [showDisposition, setShowDisposition] = useState(false);
+  const [dispositionReason, setDispositionReason] = useState("");
 
   useEffect(() => {
     const fetchCandidateStatus = async () => {
@@ -87,6 +89,7 @@ const CandidateEvaluation = () => {
     const score = Object.values(ratings).reduce((a, b) => a + b, 0) / 4 || 0;
 
     const payload = {
+      dispositionReason: recommendation === 'reject' ? dispositionReason : null,
       candidateId: id || 'mock-candidate-123',
       interviewerId: 'interviewer-123',
       technicalScore: ratings['technical'] || 0,
@@ -267,13 +270,41 @@ const CandidateEvaluation = () => {
               Needs Another Round
             </button>
             <button 
-              onClick={() => handleSubmit('reject')}
-              disabled={isSubmitting}
+              onClick={() => {
+                if (showDisposition) {
+                  handleSubmit('reject');
+                } else {
+                  setShowDisposition(true);
+                }
+              }}
+              disabled={isSubmitting || (showDisposition && !dispositionReason)}
               className="flex items-center justify-center gap-2 px-6 py-4 bg-red-50 text-red-600 rounded-2xl font-bold hover:bg-red-100 transition-all disabled:opacity-50"
             >
-              <SafeIcon icon={FiX} /> Do Not Hire
+              <SafeIcon icon={FiX} /> {showDisposition ? 'Confirm Reject' : 'Do Not Hire'}
             </button>
           </div>
+
+          {showDisposition && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="mt-6 p-6 bg-red-50/50 rounded-2xl border border-red-100"
+            >
+              <label className="block text-sm font-bold text-slate-900 mb-2">Disposition Reason (Required)</label>
+              <select
+                value={dispositionReason}
+                onChange={(e) => setDispositionReason(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-red-200 bg-white outline-none focus:border-red-500"
+              >
+                <option value="">Select a reason...</option>
+                <option value="Skill Match">Skill Match</option>
+                <option value="Experience Level">Experience Level</option>
+                <option value="Interview Rubric Score">Interview Rubric Score</option>
+                <option value="Candidate Withdrew">Candidate Withdrew</option>
+                <option value="Culture Fit">Culture Fit</option>
+              </select>
+            </motion.div>
+          )}
         </div>
       </div>
     </div>

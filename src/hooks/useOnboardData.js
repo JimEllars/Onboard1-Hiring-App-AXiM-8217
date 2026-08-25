@@ -134,6 +134,9 @@ export const useOnboardData = () => {
              console.log('Evaluation submitted event received:', data);
           } else if (data.type === 'offer_signed') {
              console.log('Offer signed event received:', data);
+          } else if (data.type === 'toast') {
+             // Dispatch a custom event to trigger toast in Topbar
+             window.dispatchEvent(new CustomEvent('new-notification', { detail: data }));
           }
         } catch (err) {
           console.warn('Failed to parse SSE data', err);

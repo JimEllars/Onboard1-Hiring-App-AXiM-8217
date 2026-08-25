@@ -4,18 +4,44 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import SafeIcon from '../common/SafeIcon';
 
-const { FiSearch, FiBell, FiMenu, FiCheck, FiClock, FiX } = FiIcons;
+const { FiSearch, FiBell, FiMenu, FiCheck, FiClock, FiX, FiExternalLink } = FiIcons;
 
 const Topbar = ({ title, toggleSidebar }) => {
   const navigate = useNavigate();
   const [showNotifications, setShowNotifications] = useState(false);
+  const [liveToasts, setLiveToasts] = useState([]);
   const notificationRef = useRef(null);
 
-  const notifications = [
+  const [notifications, setNotifications] = useState([
     { id: 1, title: 'New Application', desc: 'Sarah Miller applied for Senior Designer', time: '2 mins ago', type: 'info', icon: FiSearch },
     { id: 2, title: 'Interview Reminder', desc: 'Technical Round with James Wilson', time: '1 hour ago', type: 'warning', icon: FiClock },
     { id: 3, title: 'Document Verified', desc: 'James Wilson signed the NDA agreement', time: '3 hours ago', type: 'success', icon: FiCheck },
-  ];
+  ]);
+
+  useEffect(() => {
+    const handleNewNotification = (e) => {
+      const data = e.detail;
+      const newNotification = {
+        id: Date.now(),
+        title: data.title,
+        desc: data.desc,
+        time: 'Just now',
+        type: data.title.includes('Signed') ? 'success' : 'info',
+        icon: data.title.includes('Signed') ? FiCheck : FiSearch,
+        link: data.link
+      };
+
+      setNotifications(prev => [newNotification, ...prev]);
+
+      setLiveToasts(prev => [...prev, newNotification]);
+      setTimeout(() => {
+        setLiveToasts(prev => prev.filter(t => t.id !== newNotification.id));
+      }, 5000);
+    };
+
+    window.addEventListener('new-notification', handleNewNotification);
+    return () => window.removeEventListener('new-notification', handleNewNotification);
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -28,6 +54,34 @@ const Topbar = ({ title, toggleSidebar }) => {
   }, []);
 
   return (
+    <>
+
+      <div className="fixed top-20 right-6 z-50 flex flex-col gap-3">
+        <AnimatePresence>
+          {liveToasts.map(toast => (
+            <motion.div
+              key={toast.id}
+              initial={{ opacity: 0, x: 50, scale: 0.95 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 50, scale: 0.95 }}
+              className="bg-white p-4 rounded-2xl shadow-2xl border border-slate-100 flex items-start gap-4 w-80 cursor-pointer hover:border-blue-500 transition-all group"
+              onClick={() => navigate(toast.link)}
+            >
+              <div className={`w-10 h-10 rounded-xl shrink-0 flex items-center justify-center ${toast.type === 'success' ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'}`}>
+                <SafeIcon icon={toast.icon} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-slate-900 truncate">{toast.title}</p>
+                <p className="text-xs text-slate-500 line-clamp-2 mt-0.5 font-medium">{toast.desc}</p>
+              </div>
+              <div className="text-slate-400 group-hover:text-blue-600 mt-1">
+                <SafeIcon icon={FiExternalLink} />
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+
     <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 z-30 sticky top-0">
       <div className="flex items-center gap-4">
         <button onClick={toggleSidebar} className="md:hidden text-gray-500 hover:text-gray-700">
@@ -100,6 +154,7 @@ const Topbar = ({ title, toggleSidebar }) => {
         </div>
       </div>
     </header>
+    </>
   );
 };
 

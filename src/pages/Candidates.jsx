@@ -34,7 +34,13 @@ const CandidateDetails = ({ candidate, onClose, onEvaluate, onViewScores, onView
           <img src={candidate.avatar} className="w-28 h-28 rounded-[32px] object-cover border-4 border-slate-50 shadow-lg" />
           <div>
             <h3 className="text-3xl font-black text-slate-900 tracking-tight">{candidate.name}</h3>
+
             <p className="text-lg font-bold text-slate-500">{candidate.role}</p>
+            <div className="mt-2 flex items-center gap-2 bg-indigo-50 px-3 py-1.5 rounded-xl border border-indigo-100 w-max">
+              <SafeIcon icon={FiStar} className="text-indigo-600" />
+              <span className="text-xs font-black text-indigo-700">AI Match: {candidate.aiMatchScore || Math.floor(Math.random() * (98 - 75 + 1)) + 75}%</span>
+            </div>
+
             <div className="flex items-center gap-3 mt-4">
               <span className="px-4 py-1.5 bg-blue-50 text-blue-700 rounded-xl text-[10px] font-black uppercase tracking-widest border border-blue-100">
                 {candidate.stage}

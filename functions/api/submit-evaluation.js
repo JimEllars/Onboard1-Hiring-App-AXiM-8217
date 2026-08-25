@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { successResponse, errorResponse, handleOptions, getCorsHeaders } from '../utils/response.js';
-import { sendStageAdvancementEmail } from '../utils/email.js';
+import { sendStageAdvancementEmail, sendRejectionEmail } from '../utils/email.js';
 
 export async function onRequestOptions({ request }) {
   return handleOptions(request);
@@ -54,16 +54,24 @@ export async function onRequestPost({ request, env }) {
       return errorResponse("Failed to save evaluation data", "DB_ERROR", 500, headers);
     }
 
-    let newStatus = 'rejected';
+    let newStatus = 'Archived'; // Rejected -> Archived
     if (payload.recommendation === 'hire' || payload.recommendation === 'advance') {
       newStatus = 'Recommended for Offer';
     } else if (payload.recommendation === 'maybe') {
       newStatus = 'Screening';
     }
 
+    const updatePayload = { status: newStatus };
+    if (newStatus === 'Archived' && payload.dispositionReason) {
+        updatePayload.metadata = {
+            dispositionReason: payload.dispositionReason,
+            dispositionTimestamp: new Date().toISOString()
+        };
+    }
+
     const { error: updateError } = await supabase
       .from('onboard1_candidates')
-      .update({ status: newStatus })
+      .update(updatePayload)
       .eq('id', payload.candidateId);
 
     if (updateError) {
@@ -80,6 +88,8 @@ export async function onRequestPost({ request, env }) {
             await sendStageAdvancementEmail(candidateEmail, 'offer', dummyToken, env, origin);
         } else if (newStatus === 'Screening') {
             await sendStageAdvancementEmail(candidateEmail, 'video-assessment', dummyToken, env, origin);
+        } else if (newStatus === 'Archived') {
+            await sendRejectionEmail(candidateEmail, env);
         }
     } catch (emailErr) {
         console.error("Failed to send stage advancement email", emailErr);

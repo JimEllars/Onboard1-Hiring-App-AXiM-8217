@@ -126,3 +126,44 @@ export async function sendStageAdvancementEmail(email, stage, token, env, origin
   const responseData = await response.json();
   return responseData;
 }
+
+
+export async function sendRejectionEmail(email, env) {
+  const resendApiKey = env.RESEND_API_KEY;
+  if (!resendApiKey) {
+    throw new Error("RESEND_API_KEY is not set.");
+  }
+
+  const htmlContent = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eaeaea; border-radius: 8px;">
+      <h2 style="color: #333; margin-top: 0;">Application Status Update</h2>
+      <p style="color: #555; line-height: 1.6;">Thank you for taking the time to interview with us.</p>
+      <p style="color: #555; line-height: 1.6;">While we were impressed with your background, we have decided to move forward with other candidates who more closely align with our current needs for this position.</p>
+      <p style="color: #555; line-height: 1.6;">We appreciate your interest in our company and wish you the best of luck in your future endeavors.</p>
+      <p style="color: #888; font-size: 13px; margin-top: 30px;">Best regards,<br>The Hiring Team</p>
+    </div>
+  `;
+
+  const payload = {
+    from: 'Acme Hiring <onboarding@resend.dev>',
+    to: [email],
+    subject: 'Application Status Update',
+    html: htmlContent
+  };
+
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${resendApiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const errorData = await response.text();
+    throw new Error(`Failed to send email via Resend API: ${response.status} ${errorData}`);
+  }
+
+  return await response.json();
+}

@@ -45,6 +45,7 @@ const ApplicationForm = () => {
 
       // Clean JSON payload for Temporal
       const temporalPayload = {
+        referralCode: referralCode,
         candidateEmail: formData.email,
         jobId: id,
         candidateData: {

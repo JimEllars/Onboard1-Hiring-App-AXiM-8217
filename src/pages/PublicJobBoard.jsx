@@ -1,20 +1,52 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
+import { useOnboardData } from '../hooks/useOnboardData';
 
-const { FiSearch, FiMapPin, FiClock, FiBriefcase, FiArrowRight, FiGlobe, FiCpu, FiLayout, FiCheck } = FiIcons;
+const { FiSearch, FiMapPin, FiClock, FiBriefcase, FiArrowRight, FiGlobe, FiCpu, FiLayout, FiCheck, FiFilter } = FiIcons;
 
 const PublicJobBoard = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const referralCode = searchParams.get('ref');
   const [search, setSearch] = useState('');
+  const [selectedDept, setSelectedDept] = useState('');
+  const [selectedLocation, setSelectedLocation] = useState('');
+  const [selectedType, setSelectedType] = useState('');
 
-  const jobs = [
+  const { jobs: dynamicJobs } = useOnboardData();
+
+  const mockJobs = [
     { id: 1, title: 'Senior Frontend Engineer', dept: 'Engineering', location: 'San Francisco, CA', type: 'Full-time', salary: '$140k - $180k', icon: FiCpu, color: 'text-blue-600', bg: 'bg-blue-50' },
     { id: 2, title: 'Product Marketing Manager', dept: 'Marketing', location: 'Remote', type: 'Full-time', salary: '$110k - $150k', icon: FiLayout, color: 'text-indigo-600', bg: 'bg-indigo-50' },
     { id: 3, title: 'UX/UI Designer', dept: 'Design', location: 'New York, NY', type: 'Contract', salary: '$80 - $120/hr', icon: FiBriefcase, color: 'text-emerald-600', bg: 'bg-emerald-50' },
   ];
+
+  const jobsList = dynamicJobs && dynamicJobs.length > 0 ? dynamicJobs : mockJobs;
+
+  const filteredJobs = useMemo(() => {
+    return jobsList.filter(j => {
+      const matchSearch = j.title.toLowerCase().includes(search.toLowerCase()) ||
+                          (j.dept && j.dept.toLowerCase().includes(search.toLowerCase()));
+      const matchDept = selectedDept ? j.dept === selectedDept : true;
+      const matchLocation = selectedLocation ? j.location === selectedLocation : true;
+      const matchType = selectedType ? j.type === selectedType : true;
+
+      return matchSearch && matchDept && matchLocation && matchType;
+    });
+  }, [jobsList, search, selectedDept, selectedLocation, selectedType]);
+
+  const departments = [...new Set(jobsList.map(j => j.dept).filter(Boolean))];
+  const locations = [...new Set(jobsList.map(j => j.location).filter(Boolean))];
+  const types = [...new Set(jobsList.map(j => j.type).filter(Boolean))];
+
+  const handleApplyClick = (jobId) => {
+    const url = referralCode ? `/apply/${jobId}?ref=${referralCode}` : `/apply/${jobId}`;
+    navigate(url);
+  };
+
 
   return (
     <div className="min-h-screen bg-white">
@@ -53,18 +85,18 @@ const PublicJobBoard = () => {
         </motion.div>
 
         <div className="space-y-6">
-          {jobs.filter(j => j.title.toLowerCase().includes(search.toLowerCase())).map((job, i) => (
+          {filteredJobs.map((job, i) => (
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: i * 0.1 }}
               key={job.id} 
-              onClick={() => navigate(`/apply/${job.id}`)}
+              onClick={() => handleApplyClick(job.id)}
               className="group p-8 bg-white border border-slate-100 rounded-[32px] hover:border-blue-500 hover:shadow-2xl hover:shadow-blue-100/50 transition-all cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-8"
             >
               <div className="flex items-center gap-6">
-                <div className={`w-16 h-16 rounded-2xl ${job.bg} ${job.color} flex items-center justify-center text-3xl group-hover:scale-110 transition-transform`}>
-                  <SafeIcon icon={job.icon} />
+                <div className={`w-16 h-16 rounded-2xl ${job.bg || 'bg-blue-50'} ${job.color || 'text-blue-600'} flex items-center justify-center text-3xl group-hover:scale-110 transition-transform`}>
+                  <SafeIcon icon={job.icon || FiBriefcase} />
                 </div>
                 <div>
                   <h3 className="text-2xl font-black text-slate-900 mb-2 group-hover:text-blue-600 transition-colors">{job.title}</h3>
@@ -93,6 +125,20 @@ const PublicJobBoard = () => {
       <section className="bg-slate-50 py-24 px-8 border-y border-slate-100 relative overflow-hidden">
         <div className="max-w-4xl mx-auto text-center relative z-10">
           <h2 className="text-3xl font-black text-slate-900 mb-8 tracking-tight">Can't find what you're looking for?</h2>
+          <div className="flex flex-col md:flex-row gap-4 mb-8 justify-center max-w-4xl mx-auto">
+            <select value={selectedDept} onChange={(e) => setSelectedDept(e.target.value)} className="px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 shadow-sm text-sm font-bold text-slate-700">
+              <option value="">All Departments</option>
+              {departments.map(d => <option key={d} value={d}>{d}</option>)}
+            </select>
+            <select value={selectedLocation} onChange={(e) => setSelectedLocation(e.target.value)} className="px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 shadow-sm text-sm font-bold text-slate-700">
+              <option value="">All Locations</option>
+              {locations.map(l => <option key={l} value={l}>{l}</option>)}
+            </select>
+            <select value={selectedType} onChange={(e) => setSelectedType(e.target.value)} className="px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 shadow-sm text-sm font-bold text-slate-700">
+              <option value="">All Types</option>
+              {types.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
           <div className="relative max-w-xl mx-auto group">
             <SafeIcon icon={FiSearch} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 text-xl" />
             <input 

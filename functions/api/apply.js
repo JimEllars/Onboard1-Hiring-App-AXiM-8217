@@ -37,6 +37,9 @@ export async function onRequestPost({ request, env }) {
         phone: payload.candidateData.phone || null,
         linkedin: payload.candidateData.linkedin || null,
         portfolio: payload.candidateData.portfolio || null,
+        referral_code: payload.referralCode || null,
+        organization_id: payload.organization_id || null,
+        tenant_id: payload.tenant_id || null,
         status: 'applied'
       })
       .select('id')

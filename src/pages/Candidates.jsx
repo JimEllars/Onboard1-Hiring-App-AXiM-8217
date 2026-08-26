@@ -8,7 +8,7 @@ import { logEvent, TELEMETRY_EVENTS } from '../lib/telemetry';
 
 const { FiSearch, FiFilter, FiDownload, FiStar, FiMail, FiX, FiFile, FiPhone, FiExternalLink, FiGrid, FiList, FiEdit, FiBarChart2, FiActivity, FiChevronRight } = FiIcons;
 
-const stages = ['Applied', 'Fit Survey', 'Video Assessment', 'Live Interview', 'Screening/Checkr', 'Offer/DocuSign', 'Hired', 'Archived / Closed'];
+const stages = ['Applied', 'Fit Survey', 'Video Assessment', 'Live Interview', 'Screening/Checkr', 'Offer / E-Sign', 'Hired', 'Archived / Closed'];
 
 const CandidateDetails = ({ candidate, onClose, onEvaluate, onViewScores, onViewProgress, onMoveStage, onApprove, onReject }) => {
   if (!candidate) return null;

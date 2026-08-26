@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { logEvent, TELEMETRY_EVENTS } from '../lib/telemetry';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
+import { useOnboardData } from '../hooks/useOnboardData';
 
 const { 
   FiArrowLeft, FiCheck, FiClock, FiCalendar, FiUser, 
@@ -13,8 +14,7 @@ const {
 const CandidateProgress = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-
-
+  const { candidates } = useOnboardData();
 
   const [candidate, setCandidate] = useState({
     name: 'Eleanor Pena',
@@ -26,14 +26,62 @@ const CandidateProgress = () => {
   });
 
   const [stages, setStages] = useState([
-    { name: 'Screening', status: 'completed', duration: '2 days', date: 'Oct 14' },
-    { name: 'Technical Task', status: 'completed', duration: '5 days', date: 'Oct 19' },
-    { name: 'Interview', status: 'current', duration: '3 days', date: 'Oct 22' },
-    { name: 'Offer', status: 'pending', duration: '-', date: '-' },
+    { name: 'Applied', status: 'completed', duration: '1 day', date: 'Oct 12' },
+    { name: 'Video Assessment', status: 'completed', duration: '2 days', date: 'Oct 14' },
+    { name: 'Live Interview', status: 'current', duration: '3 days', date: 'Oct 17' },
+    { name: 'Offer / E-Sign', status: 'pending', duration: '-', date: '-' },
     { name: 'Hired', status: 'pending', duration: '-', date: '-' },
   ]);
 
+  useEffect(() => {
+    logEvent(TELEMETRY_EVENTS.CANDIDATE_STEPPER_VIEWED || 'candidate_stepper_viewed', { candidateId: id });
+    const foundCandidate = candidates.find(c => c.id === parseInt(id));
+    if (foundCandidate) {
+      setCandidate(prev => ({
+        ...prev,
+        name: foundCandidate.name || prev.name,
+        role: foundCandidate.role || prev.role,
+        avatar: foundCandidate.avatar || prev.avatar,
+        currentStage: foundCandidate.stage || prev.currentStage,
+        appliedDate: foundCandidate.applied || prev.appliedDate
+      }));
+
+      const activeStageIndex = stages.findIndex(s => s.name === foundCandidate.stage);
+      if (activeStageIndex !== -1) {
+        setStages(prev => prev.map((s, idx) => ({
+          ...s,
+          status: idx < activeStageIndex ? 'completed' : idx === activeStageIndex ? 'current' : 'pending'
+        })));
+      }
+    }
+  }, [id, candidates]);
+
   const [isMoving, setIsMoving] = useState(false);
+
+  const getCtaLabel = (stageName) => {
+    switch (stageName) {
+      case 'Applied': return 'Continue to Video Assessment';
+      case 'Video Assessment': return 'Schedule Live Interview';
+      case 'Live Interview': return 'Review & Sign Offer';
+      case 'Offer / E-Sign': return 'Finalize Hire';
+      default: return 'Move to Next Stage';
+    }
+  };
+
+  const getCtaAction = (stageName) => {
+    logEvent(TELEMETRY_EVENTS.TASK_ACTION_CLICKED || 'task_action_clicked', { candidateId: id, currentStage: stageName });
+    if (stageName === 'Applied') {
+       // Mock action, can also be real route
+       navigate(`/apply/video-assessment`);
+    } else if (stageName === 'Video Assessment') {
+       navigate(`/apply/schedule`);
+    } else if (stageName === 'Live Interview') {
+       navigate(`/offer/${id}`);
+    } else {
+       handleMoveToNextStage();
+    }
+  };
+
 
   const timeline = [
     { type: 'stage', title: 'Moved to Interview Stage', user: 'Sarah Jenkins', time: '2 hours ago', icon: FiActivity, color: 'text-blue-600', bg: 'bg-blue-50' },
@@ -76,10 +124,10 @@ const CandidateProgress = () => {
         </button>
         <div className="flex gap-3">
           <button className="px-6 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-700 font-bold text-sm hover:bg-slate-50 transition-colors">Edit Pipeline</button>
-          <button onClick={handleMoveToNextStage} disabled={isMoving} className="flex items-center justify-center min-w-[160px] px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 disabled:opacity-70">
+          <button onClick={() => getCtaAction(candidate.currentStage)} disabled={isMoving} className="flex items-center justify-center min-w-[160px] px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 disabled:opacity-70">
             {isMoving ? (
                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : "Move to Next Stage"}
+            ) : getCtaLabel(candidate.currentStage)}
           </button>
         </div>
       </div>

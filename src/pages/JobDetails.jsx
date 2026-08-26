@@ -10,6 +10,7 @@ const { FiArrowLeft, FiEdit3, FiShare2, FiUsers, FiEye, FiCheckCircle, FiClock, 
 const JobDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const userRole = "Admin";
 
   // Mock data for a specific job
   const job = {
@@ -69,6 +70,8 @@ const JobDetails = () => {
             </div>
           </div>
           <div className="flex gap-3">
+            {userRole === "Admin" && (
+              <>
             <button className="p-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
               <SafeIcon icon={FiShare2} className="text-slate-600" />
             </button>
@@ -78,6 +81,8 @@ const JobDetails = () => {
             <button className="px-6 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-all">
               Pause Listing
             </button>
+              </>
+            )}
           </div>
         </div>
       </div>

@@ -7,18 +7,18 @@ import SafeIcon from '../common/SafeIcon';
 const { FiHome, FiBriefcase, FiUsers, FiVideo, FiFileText, FiSettings, FiMenu, FiBarChart2, FiZap, FiPieChart, FiUser, FiGift } = FiIcons;
 
 const navItems = [
-  { path: '/portal/dashboard', label: 'Dashboard', icon: FiHome },
-  { path: '/portal/jobs', label: 'Jobs', icon: FiBriefcase },
-  { path: '/portal/analytics', label: 'Analytics', icon: FiBarChart2 },
-  { path: '/portal/reports', label: 'Reports', icon: FiPieChart },
-  { path: '/portal/candidates', label: 'Candidates', icon: FiUsers },
-  { path: '/portal/interviews', label: 'Interviews', icon: FiVideo },
-  { path: '/portal/onboarding', label: 'Onboarding', icon: FiFileText },
-  { path: '/portal/referrals', label: 'Referrals', icon: FiGift },
-  { path: '/portal/settings/automation', label: 'Automation', icon: FiZap },
+  { path: '/portal/dashboard', label: 'Dashboard', icon: FiHome, roles: ['Admin', 'Hiring Manager', 'Recruiter'] },
+  { path: '/portal/jobs', label: 'Jobs', icon: FiBriefcase, roles: ['Admin', 'Hiring Manager', 'Recruiter'] },
+  { path: '/portal/analytics', label: 'Analytics', icon: FiBarChart2, roles: ['Admin', 'Hiring Manager', 'Recruiter'] },
+  { path: '/portal/reports', label: 'Reports', icon: FiPieChart, roles: ['Admin', 'Compliance Auditor'] },
+  { path: '/portal/candidates', label: 'Candidates', icon: FiUsers, roles: ['Admin', 'Hiring Manager', 'Recruiter'] },
+  { path: '/portal/interviews', label: 'Interviews', icon: FiVideo, roles: ['Admin', 'Hiring Manager', 'Interviewer', 'Recruiter'] },
+  { path: '/portal/onboarding', label: 'Onboarding', icon: FiFileText, roles: ['Admin', 'Recruiter'] },
+  { path: '/portal/referrals', label: 'Referrals', icon: FiGift, roles: ['Admin', 'Hiring Manager', 'Recruiter', 'Interviewer'] },
+  { path: '/portal/settings/automation', label: 'Automation', icon: FiZap, roles: ['Admin'] },
 ];
 
-const Sidebar = ({ isOpen, setIsOpen }) => {
+const Sidebar = ({ isOpen, setIsOpen, userRole = "Admin" }) => {
   return (
         <motion.aside
       animate={{ width: isOpen ? 260 : 80 }}
@@ -37,7 +37,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       </div>
 
       <nav className="flex-1 py-6 flex flex-col gap-2 px-3">
-        {navItems.map((item) => (
+        {navItems.filter(item => !item.roles || item.roles.includes(userRole)).map((item) => (
           <NavLink 
             key={item.path} 
             to={item.path} 

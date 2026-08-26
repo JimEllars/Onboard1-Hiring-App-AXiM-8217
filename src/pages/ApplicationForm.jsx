@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
@@ -11,6 +11,8 @@ const { FiArrowLeft, FiCheck, FiUpload, FiUser, FiMail, FiPhone, FiLinkedin, FiG
 const ApplicationForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const referralCode = searchParams.get("ref");
   const [step, setStep] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState(null);
@@ -51,7 +53,8 @@ const ApplicationForm = () => {
           linkedin: formData.linkedin,
           portfolio: formData.portfolio,
           stage: 'Screening',
-          applied: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+          applied: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+          referral_code: referralCode, referrer_id: referralCode
         }
       };
 

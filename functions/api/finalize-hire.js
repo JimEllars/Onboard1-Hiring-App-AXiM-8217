@@ -6,6 +6,81 @@ export async function onRequestOptions({ request }) {
   return handleOptions(request);
 }
 
+export async function syncWithBackoff(url, payload, options = {}) {
+  const {
+    maxRetries = 3,
+    initialDelayMs = 1000,
+    maxDelayMs = 10000,
+    backoffFactor = 2,
+    serviceName = "Downstream Service"
+  } = options;
+
+  let attempt = 0;
+  let logs = [];
+
+  const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  while (attempt <= maxRetries) {
+    const attemptLog = {
+      attempt: attempt + 1,
+      timestamp: new Date().toISOString(),
+      serviceName,
+      status: null,
+      error: null
+    };
+
+    try {
+      console.log(`[Telemetry][Sync] Attempt ${attempt + 1}/${maxRetries + 1} to push to ${serviceName} (${url})`);
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      attemptLog.status = response.status;
+
+      if (response.ok) {
+        console.log(`[Telemetry][Sync] Successfully synced to ${serviceName} on attempt ${attempt + 1}`);
+        logs.push(attemptLog);
+        return { success: true, response, logs };
+      }
+
+      if (response.status >= 500 && response.status < 600) {
+        console.error(`[Telemetry][Sync] ${serviceName} returned ${response.status} on attempt ${attempt + 1}`);
+        if (attempt === maxRetries) {
+          attemptLog.error = `${serviceName} failed after ${maxRetries} retries with status ${response.status}`;
+          logs.push(attemptLog);
+          return { success: false, error: attemptLog.error, status: response.status, logs };
+        }
+      } else {
+        // Non-retriable error
+        console.error(`[Telemetry][Sync] ${serviceName} returned non-retriable error ${response.status}`);
+        attemptLog.error = `Non-retriable error ${response.status}`;
+        logs.push(attemptLog);
+        return { success: false, error: attemptLog.error, status: response.status, logs };
+      }
+    } catch (error) {
+      console.error(`[Telemetry][Sync] Network or execution error on attempt ${attempt + 1} for ${serviceName}:`, error.message);
+      attemptLog.error = error.message;
+      if (attempt === maxRetries) {
+         logs.push(attemptLog);
+         return { success: false, error: error.message, logs };
+      }
+    }
+
+    logs.push(attemptLog);
+    const delayMs = Math.min(maxDelayMs, initialDelayMs * Math.pow(backoffFactor, attempt));
+    console.log(`[Telemetry][Sync] Waiting ${delayMs}ms before next attempt for ${serviceName}`);
+    await wait(delayMs);
+    attempt++;
+  }
+
+  return { success: false, error: "Max retries exceeded", logs };
+}
+
 export async function onRequestPost({ request, env }) {
   const origin = request.headers.get("Origin");
   const headers = getCorsHeaders(origin);
@@ -56,8 +131,8 @@ export async function onRequestPost({ request, env }) {
     };
 
     // Sync payload to downstream services concurrently or sequentially
-    const agentViewPromise = syncPayload(env.AGENTVIEW_WEBHOOK_URL || env.AGENTVIEW_API_URL || 'https://mock.agentview.com/api', candidateDossier, { serviceName: 'AgentView' });
-    const trainingPromise = syncPayload(env.TRAINING_API_URL || 'https://mock.training.com/api', candidateDossier, { serviceName: 'Training System' });
+    const agentViewPromise = syncWithBackoff(env.AGENTVIEW_WEBHOOK_URL || env.AGENTVIEW_API_URL || 'https://mock.agentview.com/api', candidateDossier, { serviceName: 'AgentView', maxRetries: 3, initialDelayMs: 1000, backoffFactor: 2, maxDelayMs: 10000 });
+    const trainingPromise = syncWithBackoff(env.TRAINING_API_URL || 'https://mock.training.com/api', candidateDossier, { serviceName: 'Training System' });
 
     // Wait for both to complete
     const [agentViewResult, trainingResult] = await Promise.all([agentViewPromise, trainingPromise]);
@@ -69,6 +144,19 @@ export async function onRequestPost({ request, env }) {
     if (!trainingResult.success) {
       console.warn(`[Telemetry] Failed to sync to Training System: ${trainingResult.error}`);
     }
+
+    // Log retries to audit log
+    const auditLogs = [
+      ...(agentViewResult.logs || []),
+      ...(trainingResult.logs || [])
+    ];
+
+    const existingAuditLog = Array.isArray(candidate.audit_log) ? candidate.audit_log : [];
+    const newAuditLog = [...existingAuditLog, {
+      event: 'downstream_sync',
+      timestamp: new Date().toISOString(),
+      details: auditLogs
+    }];
 
     // Dispatch OfferAcceptedSignal to Temporal
     if (env.TEMPORAL_REST_ENDPOINT) {
@@ -87,10 +175,15 @@ export async function onRequestPost({ request, env }) {
        }
     }
 
-    // Update candidate status to Hired - Sync Complete
+    const finalStatus = agentViewResult.success ? 'transferred' : 'delivery_failed';
+
+    // Update candidate status and audit logs
     const { error: updateError } = await supabase
       .from('onboard1_candidates')
-      .update({ status: 'Hired - Sync Complete' })
+      .update({
+        status: finalStatus,
+        audit_log: newAuditLog
+      })
       .eq('id', payload.candidateId);
 
     if (updateError) {
@@ -98,7 +191,7 @@ export async function onRequestPost({ request, env }) {
       return errorResponse("Failed to update candidate status", "DB_ERROR", 500, headers);
     }
 
-    return successResponse({ message: "Hire finalized successfully" }, 200, headers);
+    return successResponse({ message: "Hire finalized successfully", status: finalStatus }, 200, headers);
   } catch (error) {
     console.error("Internal server error:", error);
     return errorResponse(error.message, "INTERNAL_ERROR", 500, headers);

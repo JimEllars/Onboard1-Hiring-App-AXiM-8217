@@ -27,3 +27,8 @@ Successfully implemented dynamic workflow step building and organizational quota
 ## Verification
 * A clean build (`npm run build`) successfully executes.
 * Tested the limit mechanism by toggling super user status to enforce strict caps visually on dashboard creation functions.
+
+### Sprint 2.7 Updates
+- **AgentView Backoff Engine**: Implemented an exponential backoff retry loop in `finalize-hire.js` for downstream handoffs with proper audit logging.
+- **Referral Tracking**: Updated `ReferralProgram.jsx` to generate unique referral links, added `ref` tracking to `ApplicationForm.jsx`, and displayed referral badges in `Candidates.jsx`.
+- **Role-Based Access Control (RBAC)**: Added granular UI action guards and navigation filtering based on role in `TeamManagement.jsx`, `Sidebar.jsx`, `JobDetails.jsx`, and `CandidateEvaluation.jsx`.

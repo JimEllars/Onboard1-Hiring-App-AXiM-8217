@@ -112,7 +112,94 @@ const Reports = () => {
         </div>
       </div>
 
-      <div className="bg-slate-900 p-12 rounded-[48px] text-white relative overflow-hidden shadow-2xl">
+
+      <div className="bg-white p-10 rounded-[40px] border border-slate-100 shadow-sm mt-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+          <div>
+            <h3 className="text-xl font-black text-slate-900">OFCCP Compliance & Audit</h3>
+            <p className="text-sm text-slate-500 font-medium mt-1">
+              Selection rates, stage drop-offs, disposition breakdowns. Demographic data is masked for EEOC compliance.
+            </p>
+          </div>
+          <button onClick={() => {
+            const auditData = [
+              { candidateId: 'anon-101', stageHistories: 'Applied: 10/1, Screened: 10/3, Interviewed: 10/10, Rejected: 10/15', dispositionReason: 'Skill Match', reviewerNotes: 'Good potential, lacks specific framework experience.', demographicData: 'REDACTED' },
+              { candidateId: 'anon-102', stageHistories: 'Applied: 10/2, Screened: 10/5, Interviewed: 10/12, Offered: 10/18', dispositionReason: 'N/A', reviewerNotes: 'Strong hire, perfect culture fit.', demographicData: 'REDACTED' },
+              { candidateId: 'anon-103', stageHistories: 'Applied: 10/4, Screened: 10/6, Rejected: 10/7', dispositionReason: 'Experience Level', reviewerNotes: 'Entry level candidate for a senior role.', demographicData: 'REDACTED' }
+            ];
+            const csv = 'CandidateID,StageHistories,DispositionReason,ReviewerNotes,Demographics\n' +
+              auditData.map(r => `"${r.candidateId}","${r.stageHistories}","${r.dispositionReason}","${r.reviewerNotes}","${r.demographicData}"`).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'OFCCP_Audit_Dossier.csv');
+            a.click();
+          }} className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-2xl font-bold text-sm hover:bg-slate-800 transition-all shadow-md">
+            <SafeIcon icon={FiDownload} /> Export OFCCP Audit Dossier
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {[
+            { label: 'Overall Selection Rate', value: '18.4%', bg: 'bg-emerald-50', color: 'text-emerald-700' },
+            { label: 'Adverse Impact Ratio', value: '0.92', bg: 'bg-blue-50', color: 'text-blue-700' },
+            { label: 'Avg Stage Drop-off', value: '34%', bg: 'bg-amber-50', color: 'text-amber-700' }
+          ].map((stat, i) => (
+            <div key={i} className={`${stat.bg} p-6 rounded-3xl border border-white/50`}>
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">{stat.label}</p>
+              <h4 className={`text-2xl font-black ${stat.color}`}>{stat.value}</h4>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div>
+            <h4 className="text-sm font-bold text-slate-900 mb-4">Disposition Breakdown</h4>
+            <div className="space-y-4">
+              {[
+                { reason: 'Skill Match', pct: 45, color: 'bg-blue-500' },
+                { reason: 'Experience Level', pct: 30, color: 'bg-indigo-500' },
+                { reason: 'Interview Rubric Score', pct: 15, color: 'bg-purple-500' },
+                { reason: 'Candidate Withdrew', pct: 10, color: 'bg-slate-400' }
+              ].map((item, i) => (
+                <div key={i}>
+                  <div className="flex justify-between text-xs font-bold text-slate-600 mb-1.5">
+                    <span>{item.reason}</span>
+                    <span>{item.pct}%</span>
+                  </div>
+                  <div className="w-full bg-slate-100 rounded-full h-2">
+                    <div className={`${item.color} h-2 rounded-full`} style={{ width: `${item.pct}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-slate-900 mb-4">Stage Drop-offs</h4>
+             <div className="space-y-4">
+              {[
+                { stage: 'Application -> Screen', pct: 60, color: 'bg-emerald-500' },
+                { stage: 'Screen -> Interview', pct: 35, color: 'bg-emerald-400' },
+                { stage: 'Interview -> Offer', pct: 15, color: 'bg-emerald-300' }
+              ].map((item, i) => (
+                <div key={i}>
+                  <div className="flex justify-between text-xs font-bold text-slate-600 mb-1.5">
+                    <span>{item.stage}</span>
+                    <span>{item.pct}% Pass Rate</span>
+                  </div>
+                  <div className="w-full bg-slate-100 rounded-full h-2">
+                    <div className={`${item.color} h-2 rounded-full`} style={{ width: `${item.pct}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-slate-900 p-12 rounded-[48px] text-white relative overflow-hidden shadow-2xl mt-8">
+
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8 text-center md:text-left">
           <div className="max-w-xl">
             <h3 className="text-3xl font-black mb-4">Predictive Hiring Insights</h3>

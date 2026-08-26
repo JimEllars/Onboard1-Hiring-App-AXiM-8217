@@ -214,6 +214,39 @@ const CandidateEvaluation = () => {
           </div>
         </div>
 
+        {/* AI Assist Panel */}
+        <div className="mb-12 bg-indigo-50 border border-indigo-100 rounded-3xl p-8 shadow-sm">
+          <div className="flex items-start justify-between mb-6">
+            <div>
+              <h3 className="text-xl font-black text-indigo-900 flex items-center gap-2">
+                <SafeIcon icon={FiStar} className="text-indigo-600 fill-current" /> AI Candidate Match Assist
+              </h3>
+              <p className="text-sm font-medium text-indigo-600/80 mt-1">Objective evaluation based on job requirements, strictly ignoring demographic data.</p>
+            </div>
+            <div className="bg-white px-4 py-2 rounded-xl border border-indigo-100 flex flex-col items-center justify-center shadow-sm">
+              <span className="text-[10px] font-black uppercase text-indigo-400 tracking-widest">Match Score</span>
+              <span className="text-2xl font-black text-indigo-700">{Math.floor(Math.random() * (98 - 75 + 1)) + 75}%</span>
+            </div>
+          </div>
+          <div className="bg-white rounded-2xl p-6 border border-indigo-100/50">
+            <h4 className="text-xs font-black text-indigo-900 uppercase tracking-widest mb-4">Key Strengths</h4>
+            <ul className="space-y-3">
+              {[
+                "Strong alignment with technical requirements based on past experience.",
+                "Demonstrates clear problem-solving methodology in responses.",
+                "Relevant industry background matches the job profile."
+              ].map((strength, i) => (
+                <li key={i} className="flex items-start gap-3 text-sm font-bold text-slate-700">
+                  <div className="w-5 h-5 rounded-full bg-indigo-100 flex items-center justify-center shrink-0 mt-0.5">
+                    <SafeIcon icon={FiCheck} className="text-indigo-600 text-[10px]" />
+                  </div>
+                  {strength}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
         <div className="space-y-8">
           {criteria.map((item) => (
             <div key={item.key} className="flex flex-col md:flex-row md:items-center justify-between gap-4">

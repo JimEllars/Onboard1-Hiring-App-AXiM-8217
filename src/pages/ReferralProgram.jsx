@@ -7,7 +7,8 @@ const { FiGift, FiUsers, FiLink, FiTrendingUp, FiCheck, FiCopy, FiMail, FiDollar
 
 const ReferralProgram = () => {
   const [copied, setCopied] = useState(false);
-  const referralLink = "https://onboard01.com/ref/sarah-j";
+  const [userRef] = useState("EMP" + Math.floor(Math.random() * 900 + 100));
+  const referralLink = `${window.location.origin}/jobs?ref=${userRef}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(referralLink);

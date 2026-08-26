@@ -238,6 +238,7 @@ const Candidates = () => {
                     </td>
                     <td className="py-6 px-10">
                       <p className="text-sm font-bold text-slate-700">{candidate.role}</p>
+                      {candidate.referral_code && <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-purple-50 text-purple-600 border border-purple-100">Referred by {candidate.referral_code}</span>}
                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">Applied {candidate.applied}</p>
                     </td>
                     <td className="py-6 px-10">
@@ -302,6 +303,7 @@ const Candidates = () => {
                       <div>
                         <p className="text-sm font-black text-slate-900 group-hover:text-blue-600 transition-colors">{candidate.name}</p>
                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">{candidate.role}</p>
+                        {candidate.referral_code && <span className="inline-flex items-center mt-1 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-purple-50 text-purple-600 border border-purple-100">Ref: {candidate.referral_code}</span>}
                       </div>
                     </div>
                     <div className="flex items-center justify-between pt-4 border-t border-slate-50">

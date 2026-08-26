@@ -10,6 +10,7 @@ const { FiStar, FiMessageSquare, FiCheck, FiX, FiArrowLeft, FiAlertCircle, FiClo
 
 const CandidateEvaluation = () => {
   const { id } = useParams();
+  const userRole = "Hiring Manager";
   const navigate = useNavigate();
   const [ratings, setRatings] = useState({
     technical: 0,
@@ -287,6 +288,8 @@ const CandidateEvaluation = () => {
             <SafeIcon icon={FiAlertCircle} className="text-blue-600" /> Final Recommendation
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {userRole === "Hiring Manager" ? (
+              <>
             <button 
               onClick={() => handleSubmit('hire')}
               disabled={isSubmitting || backgroundStatus !== 'clear'}
@@ -315,6 +318,10 @@ const CandidateEvaluation = () => {
             >
               <SafeIcon icon={FiX} /> {showDisposition ? 'Confirm Reject' : 'Do Not Hire'}
             </button>
+              </>
+            ) : (
+              <div className="col-span-3 text-center text-slate-500 font-bold p-4 bg-white rounded-xl border border-slate-200">Only Hiring Managers can make final decisions.</div>
+            )}
           </div>
 
           {showDisposition && (

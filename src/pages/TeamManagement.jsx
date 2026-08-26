@@ -119,6 +119,8 @@ const TeamManagement = () => {
                   <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">System Role</label>
                   <select className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500">
                     <option>Recruiter</option>
+                    <option>Interviewer</option>
+                    <option>Compliance Auditor</option>
                     <option>Hiring Manager</option>
                     <option>Admin</option>
                   </select>

@@ -64,15 +64,23 @@ export async function onRequestPost({ request, env }) {
       document_type: docType
     };
 
+    // Extract tenant details
+    const organization_id = candidate.organization_id;
+    const tenant_id = candidate.tenant_id;
+
     // Clear token, update status, save signature
     const { error: updateError } = await supabase
       .from('onboard1_candidates')
       .update({
         status: 'signed',
         signing_token: null, // single-use token
-        signature_data: signatureRecord
+        signature_data: signatureRecord,
+        organization_id,
+        tenant_id
       })
-      .eq('id', candidateId);
+      .eq('id', candidateId)
+      .eq('organization_id', organization_id)
+      .eq('tenant_id', tenant_id);
 
     if (updateError) {
       console.error("Failed to update candidate after signing:", updateError);
@@ -81,7 +89,9 @@ export async function onRequestPost({ request, env }) {
 
     return successResponse({
       message: "Signature successfully recorded",
-      auditHash: auditHash
+      auditHash: auditHash,
+      organization_id,
+      tenant_id
     }, 200, headers);
   } catch (error) {
     console.error("Sign offer error:", error);

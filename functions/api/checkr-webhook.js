@@ -11,43 +11,51 @@ export async function onRequestPost({ request, env }) {
 
   try {
     const signature = request.headers.get('X-Checkr-Signature');
+    const aximServiceKey = request.headers.get('X-AXiM-Service-Key');
     const bodyText = await request.text();
 
-    if (!env.CHECKR_WEBHOOK_SECRET) {
+    if (!env.CHECKR_WEBHOOK_SECRET && !env.AXIM_SERVICE_KEY) {
       return errorResponse("Missing webhook secret configuration", "CONFIG_ERROR", 500, headers);
     }
 
-    if (!signature) {
-      return errorResponse("Missing signature", "UNAUTHORIZED", 401, headers);
-    }
+    const isAuthorizedAxim = aximServiceKey && env.AXIM_SERVICE_KEY && aximServiceKey === env.AXIM_SERVICE_KEY;
 
-    const encoder = new TextEncoder();
-    const key = await crypto.subtle.importKey(
-      'raw',
-      encoder.encode(env.CHECKR_WEBHOOK_SECRET),
-      { name: 'HMAC', hash: 'SHA-256' },
-      false,
-      ['verify', 'sign']
-    );
+    if (!isAuthorizedAxim) {
+      if (!signature) {
+        return errorResponse("Missing signature", "UNAUTHORIZED", 401, headers);
+      }
 
-    const expectedSignatureBuffer = await crypto.subtle.sign(
-      'HMAC',
-      key,
-      encoder.encode(bodyText)
-    );
+      const encoder = new TextEncoder();
+      const key = await crypto.subtle.importKey(
+        'raw',
+        encoder.encode(env.CHECKR_WEBHOOK_SECRET),
+        { name: 'HMAC', hash: 'SHA-256' },
+        false,
+        ['verify', 'sign']
+      );
 
-    const expectedSignatureArray = Array.from(new Uint8Array(expectedSignatureBuffer));
-    const expectedSignatureHex = expectedSignatureArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      const expectedSignatureBuffer = await crypto.subtle.sign(
+        'HMAC',
+        key,
+        encoder.encode(bodyText)
+      );
 
-    if (signature !== expectedSignatureHex) {
-      return errorResponse("Invalid signature", "UNAUTHORIZED", 401, headers);
+      const expectedSignatureArray = Array.from(new Uint8Array(expectedSignatureBuffer));
+      const expectedSignatureHex = expectedSignatureArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+      if (signature !== expectedSignatureHex) {
+        return errorResponse("Invalid signature", "UNAUTHORIZED", 401, headers);
+      }
     }
 
     let payload;
     try {
       payload = JSON.parse(bodyText);
     } catch (e) {
-      return errorResponse("Invalid JSON payload", "INVALID_PAYLOAD", 400, headers);
+      return new Response(JSON.stringify({ error: "Invalid Payload" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...headers }
+      });
     }
 
     if (payload.type === 'report.completed' || payload.type === 'report.suspended') {

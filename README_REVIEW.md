@@ -32,3 +32,8 @@ Successfully implemented dynamic workflow step building and organizational quota
 - **AgentView Backoff Engine**: Implemented an exponential backoff retry loop in `finalize-hire.js` for downstream handoffs with proper audit logging.
 - **Referral Tracking**: Updated `ReferralProgram.jsx` to generate unique referral links, added `ref` tracking to `ApplicationForm.jsx`, and displayed referral badges in `Candidates.jsx`.
 - **Role-Based Access Control (RBAC)**: Added granular UI action guards and navigation filtering based on role in `TeamManagement.jsx`, `Sidebar.jsx`, `JobDetails.jsx`, and `CandidateEvaluation.jsx`.
+
+### Sprint 3.0 Updates
+- **Marketplace Integration Configuration Modals:** Configured integration drawers/modals for Slack (Webhook URL, Channel), Google Workspace (Calendar Sync, API Token), and Greenhouse/Lever (Webhook Secret, ATS Endpoint) with telemetry logging.
+- **Live Automation Trigger Execution:** Wired automation settings toggles, implemented "Run Stagnation Check" button for the Document Stagnation trigger, and added execution logging upon offer acceptance.
+- **Multi-Select Batch Candidate Operations:** Added batch selection checkboxes to List and Grid views in the Candidates pipeline. Introduced a floating Batch Actions toolbar for advancing candidates, sending reminders, and exporting candidate data to CSV.

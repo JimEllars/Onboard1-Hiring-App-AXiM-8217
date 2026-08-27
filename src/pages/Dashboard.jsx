@@ -4,11 +4,14 @@ import ReactECharts from 'echarts-for-react';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 import { useOnboardData } from '../hooks/useOnboardData';
+import { useNavigate } from 'react-router-dom';
+import { logEvent } from '../lib/telemetry';
 
-const { FiUsers, FiBriefcase, FiCheckCircle, FiClock, FiTrendingUp, FiArrowRight } = FiIcons;
+const { FiUsers, FiBriefcase, FiCheckCircle, FiClock, FiTrendingUp, FiArrowRight, FiActivity } = FiIcons;
 
 const Dashboard = () => {
-  const { stats } = useOnboardData();
+  const { stats, candidates } = useOnboardData();
+  const navigate = useNavigate();
 
   const statCards = [
     { title: 'Total Candidates', value: stats.totalCandidates.toLocaleString(), trend: '+12.5%', icon: FiUsers, color: 'bg-blue-600' },
@@ -79,6 +82,35 @@ const Dashboard = () => {
             </div>
           </motion.div>
         ))}
+      </div>
+
+
+      {/* Live Pipeline Pulse */}
+      <div>
+        <h3 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-2">
+          <SafeIcon icon={FiActivity} className="text-blue-600" /> Live Pipeline Pulse
+        </h3>
+        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+          {['Applied', 'Fit Survey', 'Video Assessment', 'Live Interview', 'Screening/Checkr', 'Offer / E-Sign', 'Hired'].map((stage, idx) => {
+            const count = (candidates || []).filter(c => c.stage === stage).length;
+            return (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: idx * 0.1 }}
+                key={stage}
+                onClick={() => {
+                  logEvent('dashboard_pipeline_pulse_clicked', { stage });
+                  navigate(`/candidates?stage=${encodeURIComponent(stage)}`);
+                }}
+                className="min-w-[140px] bg-white rounded-2xl p-4 shadow-sm border border-slate-100 cursor-pointer hover:border-blue-500 hover:shadow-md transition-all flex flex-col items-center justify-center gap-2 group"
+              >
+                <span className="text-3xl font-black text-slate-900 group-hover:text-blue-600 transition-colors">{count}</span>
+                <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest text-center">{stage}</span>
+              </motion.div>
+            );
+          })}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

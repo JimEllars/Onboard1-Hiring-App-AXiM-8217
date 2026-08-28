@@ -3,10 +3,12 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
+import { useOnboardData } from '../hooks/useOnboardData';
 
 const { FiArrowRight, FiCheckCircle, FiVideo, FiShield, FiFileText, FiCalendar } = FiIcons;
 
 const LandingPage = () => {
+  const { branding } = useOnboardData();
   const navigate = useNavigate();
 
   const features = [
@@ -22,8 +24,8 @@ const LandingPage = () => {
       {/* Navigation */}
       <nav className="h-20 px-8 flex items-center justify-between max-w-7xl mx-auto w-full absolute top-0 left-0 right-0 z-50">
         <div className="flex items-center gap-2">
-          <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black text-2xl">01</div>
-          <span className="text-2xl font-black tracking-tight text-slate-900">Onboard</span>
+          <img src={branding?.logoUrl} alt="Logo" className="w-10 h-10 rounded-xl object-cover" />
+          <span className="text-2xl font-black tracking-tight text-slate-900" style={{ color: branding?.brandColor }}>{branding?.name || 'Onboard'}</span>
         </div>
         <div className="flex items-center gap-6">
           <button
@@ -106,8 +108,8 @@ const LandingPage = () => {
       <footer className="bg-slate-900 text-white py-12 px-8">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold text-lg">01</div>
-            <span className="text-xl font-bold tracking-tight">Onboard</span>
+            <img src={branding?.logoUrl} alt="Logo" className="w-8 h-8 rounded-lg object-cover" />
+            <span className="text-xl font-bold tracking-tight" style={{ color: branding?.brandColor }}>{branding?.name || 'Onboard'}</span>
           </div>
           <p className="text-slate-400 font-medium text-sm">© {new Date().getFullYear()} Onboard AXiM. All rights reserved.</p>
         </div>

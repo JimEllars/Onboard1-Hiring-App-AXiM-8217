@@ -3,10 +3,22 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
+import { useOnboardData } from '../hooks/useOnboardData';
+import { useState } from 'react';
+import { AnimatePresence } from 'framer-motion';
 
 const { FiUser, FiShield, FiBell, FiGlobe, FiUsers, FiCreditCard, FiChevronRight, FiEdit2 } = FiIcons;
 
 const Settings = () => {
+  const { branding, updateBranding } = useOnboardData();
+  const [isBrandingModalOpen, setIsBrandingModalOpen] = useState(false);
+  const [formData, setFormData] = useState(branding);
+
+  const handleSaveBranding = () => {
+    updateBranding(formData);
+    setIsBrandingModalOpen(false);
+  };
+
   const navigate = useNavigate();
   const sections = [
     { id: 'profile', icon: FiUser, label: 'Company Profile', desc: 'Manage your organization details and branding', path: null },
@@ -20,6 +32,41 @@ const Settings = () => {
   ];
 
   return (
+    <>
+      <AnimatePresence>
+        {isBrandingModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsBrandingModalOpen(false)} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-white w-full max-w-lg rounded-3xl shadow-2xl relative p-8">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-slate-900">Company Profile</h2>
+                <button onClick={() => setIsBrandingModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-full"><SafeIcon icon={FiIcons.FiX} className="text-xl text-slate-400" /></button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Company Name</label>
+                  <input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Logo URL</label>
+                  <input type="text" value={formData.logoUrl} onChange={e => setFormData({...formData, logoUrl: e.target.value})} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Brand Accent Color (Hex)</label>
+                  <input type="text" value={formData.brandColor} onChange={e => setFormData({...formData, brandColor: e.target.value})} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Careers Headline</label>
+                  <input type="text" value={formData.headline} onChange={e => setFormData({...formData, headline: e.target.value})} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500" />
+                </div>
+                <button onClick={handleSaveBranding} className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 mt-4">
+                  Save Changes
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     <div className="max-w-4xl mx-auto space-y-8">
       <div>
         <h2 className="text-3xl font-black text-slate-900 tracking-tight">Settings</h2>
@@ -27,10 +74,10 @@ const Settings = () => {
       </div>
 
       <div className="bg-white rounded-[40px] shadow-sm border border-slate-100 overflow-hidden">
-        <div className="p-10 border-b border-slate-50 flex items-center gap-8 bg-slate-50/30">
+        <div className="p-10 border-b border-slate-50 flex items-center gap-8 bg-slate-50/30 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => { setFormData(branding); setIsBrandingModalOpen(true); }}>
           <div className="relative group">
             <img 
-              src="https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&w=100&h=100&q=80" 
+              src={branding.logoUrl}
               className="w-24 h-24 rounded-[32px] object-cover ring-8 ring-white shadow-xl" 
             />
             <button className="absolute -bottom-2 -right-2 bg-blue-600 text-white p-2.5 rounded-2xl shadow-lg opacity-0 group-hover:opacity-100 transition-all hover:scale-110">
@@ -39,7 +86,7 @@ const Settings = () => {
           </div>
           <div>
             <div className="flex items-center gap-3">
-              <h3 className="text-2xl font-black text-slate-900">Acme Corporation</h3>
+              <h3 className="text-2xl font-black text-slate-900">{branding.name}</h3>
               <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-black uppercase tracking-widest border border-blue-100">Verified Organization</span>
             </div>
             <p className="text-slate-500 font-bold text-sm mt-1 uppercase tracking-tight">Standard Enterprise Plan • 12 Active Jobs</p>
@@ -127,6 +174,7 @@ const Settings = () => {
         </button>
       </div>
     </div>
+    </>
   );
 };
 

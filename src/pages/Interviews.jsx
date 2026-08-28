@@ -2,17 +2,43 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import * as FiIcons from 'react-icons/fi';
+import { useOnboardData } from '../hooks/useOnboardData';
+import { trackInterviewScheduled } from '../lib/telemetry';
 import SafeIcon from '../common/SafeIcon';
 
 const { FiCalendar, FiVideo, FiClock, FiUser, FiMoreHorizontal, FiPlus, FiX, FiCheck } = FiIcons;
 
-const interviewsList = [
-  { id: 1, candidate: 'Eleanor Pena', role: 'UX/UI Designer', type: 'Technical Interview', date: 'Today, 2:00 PM', duration: '45 min', status: 'Upcoming', link: '/room/1' },
-  { id: 2, candidate: 'Cody Fisher', role: 'Senior Frontend Engineer', type: 'Culture Fit', date: 'Today, 4:30 PM', duration: '30 min', status: 'Upcoming', link: '/room/2' },
-  { id: 3, candidate: 'Esther Howard', role: 'Product Marketing Manager', type: 'Final Round', date: 'Tomorrow, 10:00 AM', duration: '60 min', status: 'Scheduled', link: '/room/3' },
-];
 
-const ScheduleModal = ({ isOpen, onClose }) => {
+
+const ScheduleModal = ({ isOpen, onClose, candidates, onSchedule }) => {
+  const [selectedCandidateId, setSelectedCandidateId] = useState('');
+  const [interviewType, setInterviewType] = useState('Technical Interview');
+  const [date, setDate] = useState('');
+  const [time, setTime] = useState('');
+  const [duration, setDuration] = useState('45 min');
+
+  const handleConfirm = () => {
+    if (!selectedCandidateId || !date || !time) return;
+
+    const candidate = candidates.find(c => c.id.toString() === selectedCandidateId);
+    if (!candidate) return;
+
+    const roomId = Math.random().toString(36).substring(2, 10);
+
+    onSchedule({
+      candidate: candidate.name,
+      role: candidate.role,
+      type: interviewType,
+      date: `${date}, ${time}`,
+      duration,
+      status: 'Upcoming',
+      link: `/room/${roomId}`
+    });
+
+    trackInterviewScheduled(candidate.id, { date, time, type: interviewType });
+    onClose();
+  };
+
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -25,23 +51,43 @@ const ScheduleModal = ({ isOpen, onClose }) => {
         <div className="space-y-4">
           <div>
             <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Candidate</label>
-            <select className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500">
-              <option>Eleanor Pena</option>
-              <option>Cody Fisher</option>
-              <option>Esther Howard</option>
+            <select
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500"
+              value={selectedCandidateId}
+              onChange={(e) => setSelectedCandidateId(e.target.value)}
+            >
+              <option value="">Select Candidate...</option>
+              {candidates.map(c => (
+                <option key={c.id} value={c.id}>{c.name} - {c.role}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Interview Type</label>
+            <select
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500"
+              value={interviewType}
+              onChange={(e) => setInterviewType(e.target.value)}
+            >
+              <option value="Technical Interview">Technical Interview</option>
+              <option value="Culture Fit">Culture Fit</option>
+              <option value="Final Round">Final Round</option>
             </select>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Date</label>
-              <input type="date" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500" />
+              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500" />
             </div>
             <div>
               <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Time</label>
-              <input type="time" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500" />
+              <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500" />
             </div>
           </div>
-          <button className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 mt-4">
+          <button
+            onClick={handleConfirm}
+            className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 mt-4"
+          >
             Confirm Schedule
           </button>
         </div>
@@ -51,6 +97,7 @@ const ScheduleModal = ({ isOpen, onClose }) => {
 };
 
 const Interviews = () => {
+  const { interviews, candidates, scheduleInterview, updateCandidateStage } = useOnboardData();
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -71,7 +118,7 @@ const Interviews = () => {
               <SafeIcon icon={FiCalendar} className="text-blue-600" /> Upcoming Schedule
             </h3>
           </div>
-          {interviewsList.map((interview, index) => (
+          {interviews.map((interview, index) => (
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -125,7 +172,18 @@ const Interviews = () => {
           </div>
         </div>
       </div>
-      <ScheduleModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <ScheduleModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        candidates={candidates}
+        onSchedule={(data) => {
+          scheduleInterview(data);
+          const candidate = candidates.find(c => c.name === data.candidate);
+          if (candidate) {
+             updateCandidateStage(candidate.id, 'Interview');
+          }
+        }}
+      />
     </div>
   );
 };

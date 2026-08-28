@@ -16,7 +16,7 @@ const PublicJobBoard = () => {
   const [selectedLocation, setSelectedLocation] = useState('');
   const [selectedType, setSelectedType] = useState('');
 
-  const { jobs: dynamicJobs } = useOnboardData();
+  const { jobs: dynamicJobs, branding } = useOnboardData();
 
   const mockJobs = [
     { id: 1, title: 'Senior Frontend Engineer', dept: 'Engineering', location: 'San Francisco, CA', type: 'Full-time', salary: '$140k - $180k', icon: FiCpu, color: 'text-blue-600', bg: 'bg-blue-50' },
@@ -53,8 +53,8 @@ const PublicJobBoard = () => {
       {/* Public Header */}
       <nav className="h-20 border-b border-slate-100 px-8 flex items-center justify-between max-w-7xl mx-auto w-full sticky top-0 bg-white/80 backdrop-blur-md z-50">
         <div className="flex items-center gap-2">
-          <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black text-2xl">01</div>
-          <span className="text-2xl font-black tracking-tight text-slate-900">Onboard</span>
+          <img src={branding?.logoUrl} alt="Logo" className="w-10 h-10 rounded-xl object-cover" />
+          <span className="text-2xl font-black tracking-tight text-slate-900" style={{ color: branding?.brandColor }}>{branding?.name || 'Onboard'}</span>
         </div>
         <div className="hidden md:flex items-center gap-8">
           <a href="#" className="text-sm font-bold text-slate-500 hover:text-blue-600 transition-colors">Our Culture</a>
@@ -77,7 +77,7 @@ const PublicJobBoard = () => {
         >
           <span className="px-4 py-1.5 bg-blue-50 text-blue-600 rounded-full text-xs font-black uppercase tracking-widest border border-blue-100">Now Hiring</span>
           <h1 className="text-5xl md:text-6xl font-black text-slate-900 mt-6 mb-6 tracking-tighter">
-            Open <span className="text-blue-600 underline decoration-blue-200 underline-offset-8">Positions</span>
+            {branding?.headline || 'Open Positions'}
           </h1>
           <p className="text-xl text-slate-500 font-medium max-w-2xl mx-auto leading-relaxed">
             Join a fast-growing team of innovators, designers, and engineers dedicated to simplifying the workplace experience.
@@ -156,8 +156,8 @@ const PublicJobBoard = () => {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between gap-12">
           <div className="max-w-sm">
             <div className="flex items-center gap-2 mb-6">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold text-xl">01</div>
-              <span className="text-xl font-bold tracking-tight">Onboard</span>
+              <img src={branding?.logoUrl} alt="Logo" className="w-8 h-8 rounded-lg object-cover" />
+            <span className="text-xl font-bold tracking-tight" style={{ color: branding?.brandColor }}>{branding?.name || 'Onboard'}</span>
             </div>
             <p className="text-slate-400 font-medium leading-relaxed">
               We're on a mission to make hiring and onboarding as smooth as a single click.

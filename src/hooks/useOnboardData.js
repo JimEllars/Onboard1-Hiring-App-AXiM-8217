@@ -14,9 +14,24 @@ const MOCK_CANDIDATES = [
   { id: 4, name: 'Cameron Williamson', role: 'Data Scientist', stage: 'Technical Task', rating: 4, applied: 'Oct 18, 2023', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80', email: 'cameron.w@example.com', phone: '+1 (555) 444-5555' },
 ];
 
+const MOCK_INTERVIEWS = [
+  { id: 1, candidate: 'Eleanor Pena', role: 'UX/UI Designer', type: 'Technical Interview', date: 'Today, 2:00 PM', duration: '45 min', status: 'Upcoming', link: '/room/1' },
+  { id: 2, candidate: 'Cody Fisher', role: 'Senior Frontend Engineer', type: 'Culture Fit', date: 'Today, 4:30 PM', duration: '30 min', status: 'Upcoming', link: '/room/2' },
+  { id: 3, candidate: 'Esther Howard', role: 'Product Marketing Manager', type: 'Final Round', date: 'Tomorrow, 10:00 AM', duration: '60 min', status: 'Scheduled', link: '/room/3' },
+];
+
+const DEFAULT_BRANDING = {
+  name: 'Acme Corporation',
+  logoUrl: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&w=100&h=100&q=80',
+  brandColor: '#2563eb',
+  headline: 'Open Positions'
+};
+
 export const useOnboardData = () => {
   const [jobs, setJobs] = useState([]);
   const [candidates, setCandidates] = useState([]);
+  const [interviews, setInterviews] = useState(MOCK_INTERVIEWS);
+  const [branding, setBranding] = useState(DEFAULT_BRANDING);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [session, setSession] = useState(null);
@@ -168,6 +183,14 @@ export const useOnboardData = () => {
     ));
   }, []);
 
+  const scheduleInterview = useCallback((interview) => {
+    setInterviews(prev => [...prev, { ...interview, id: Date.now() }]);
+  }, []);
+
+  const updateBranding = useCallback((newBranding) => {
+    setBranding(prev => ({ ...prev, ...newBranding }));
+  }, []);
+
   const logout = useCallback(async () => {
     if (supabase) {
       await supabase.auth.signOut();
@@ -219,5 +242,5 @@ export const useOnboardData = () => {
     }
   }, [candidates, updateCandidateStage]);
 
-  return { jobs, candidates, addJob, updateCandidateStage, approveCandidate, stats, isLoading, error, logout, session };
+  return { jobs, candidates, interviews, branding, addJob, updateCandidateStage, scheduleInterview, updateBranding, approveCandidate, stats, isLoading, error, logout, session };
 };

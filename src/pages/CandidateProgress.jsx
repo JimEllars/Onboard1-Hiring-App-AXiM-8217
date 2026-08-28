@@ -25,13 +25,8 @@ const CandidateProgress = () => {
     timeInProcess: '14 Days',
   });
 
-  const [stages, setStages] = useState([
-    { name: 'Applied', status: 'completed', duration: '1 day', date: 'Oct 12' },
-    { name: 'Video Assessment', status: 'completed', duration: '2 days', date: 'Oct 14' },
-    { name: 'Live Interview', status: 'current', duration: '3 days', date: 'Oct 17' },
-    { name: 'Offer / E-Sign', status: 'pending', duration: '-', date: '-' },
-    { name: 'Hired', status: 'pending', duration: '-', date: '-' },
-  ]);
+  const CANONICAL_STAGES = ['Applied', 'Fit Survey', 'Video Assessment', 'Live Interview', 'Screening/Checkr', 'Offer / E-Sign', 'Hired', 'Archived / Closed'];
+  const [stages, setStages] = useState(CANONICAL_STAGES.map(s => ({ name: s, status: 'pending', duration: '-', date: '-' })));
 
   useEffect(() => {
     logEvent(TELEMETRY_EVENTS.CANDIDATE_STEPPER_VIEWED || 'candidate_stepper_viewed', { candidateId: id });

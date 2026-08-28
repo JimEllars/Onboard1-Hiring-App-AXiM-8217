@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useOnboardData } from '../hooks/useOnboardData';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 import { supabase } from '../lib/supabaseClient';
@@ -10,6 +11,9 @@ const { FiArrowLeft, FiCheck, FiUpload, FiUser, FiMail, FiPhone, FiLinkedin, FiG
 
 const ApplicationForm = () => {
   const { id } = useParams();
+  const { jobs } = useOnboardData();
+  const targetJob = jobs.find(j => String(j.id) === String(id)) || { title: 'Open Position', dept: 'General' };
+
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const referralCode = searchParams.get("ref");
@@ -103,7 +107,7 @@ const ApplicationForm = () => {
               >
                 <div className="mb-12">
                   <div className="flex justify-between items-end mb-4">
-                    <h2 className="text-3xl font-black text-slate-900 tracking-tight">Applying for Senior Frontend Engineer</h2>
+                    <h2 className="text-3xl font-black text-slate-900 tracking-tight">Applying for {targetJob.title}</h2>
                     <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">Step {step} of 2</span>
                   </div>
                   <div className="h-2 bg-slate-100 rounded-full overflow-hidden">

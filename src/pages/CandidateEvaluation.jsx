@@ -5,6 +5,7 @@ import { logEvent, TELEMETRY_EVENTS } from '../lib/telemetry';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 import { supabase } from '../lib/supabaseClient';
+import { useOnboardData } from '../hooks/useOnboardData';
 
 const { FiStar, FiMessageSquare, FiCheck, FiX, FiArrowLeft, FiAlertCircle, FiClock, FiShield } = FiIcons;
 
@@ -12,6 +13,7 @@ const CandidateEvaluation = () => {
   const { id } = useParams();
   const userRole = "Hiring Manager";
   const navigate = useNavigate();
+  const { updateCandidateStage } = useOnboardData();
   const [ratings, setRatings] = useState({
     technical: 0,
     culture: 0,
@@ -28,9 +30,36 @@ const CandidateEvaluation = () => {
   const [showDisposition, setShowDisposition] = useState(false);
   const [dispositionReason, setDispositionReason] = useState("");
 
+
+
   const [aiData, setAiData] = useState(null);
   const [aiLoading, setAiLoading] = useState(true);
 
+
+
+  useEffect(() => {
+    const fetchAiData = async () => {
+      setAiLoading(true);
+      try {
+        const res = await fetch('/api/screen-candidate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ candidateId: id })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setAiData(data);
+        } else {
+          setAiData(null);
+        }
+      } catch (err) {
+        setAiData(null);
+      } finally {
+        setAiLoading(false);
+      }
+    };
+    fetchAiData();
+  }, [id]);
 
 
   useEffect(() => {
@@ -143,6 +172,14 @@ const CandidateEvaluation = () => {
       }
 
       logEvent(TELEMETRY_EVENTS.CANDIDATE_PIPELINE_EVENT, { action: 'Evaluation_Submission_Success', candidateId: payload.candidateId });
+
+      let nextStage = 'Interview';
+      if (recommendation === 'hire') nextStage = 'Offer / E-Sign';
+      else if (recommendation === 'reject') nextStage = 'Archived / Closed';
+      else if (recommendation === 'maybe') nextStage = 'Screening/Checkr';
+
+      updateCandidateStage(payload.candidateId, nextStage);
+      logEvent('candidate_stage_progressed', { candidateId: payload.candidateId, newStage: nextStage });
 
       setIsSuccess(true);
       setTimeout(() => {

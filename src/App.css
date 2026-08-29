@@ -1,3 +1,14 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@media print {
+  .print\:hidden {
+    display: none !important;
+  }
+  .sidebar {
+    display: none !important;
+  }
+  .topbar {
+    display: none !important;
+  }
+}

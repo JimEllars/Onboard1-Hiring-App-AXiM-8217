@@ -65,7 +65,7 @@ const Reports = () => {
           <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl font-bold text-sm hover:bg-slate-50 transition-all">
             <SafeIcon icon={FiFilter} /> Custom Range
           </button>
-          <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-2xl font-bold text-sm hover:bg-slate-800 transition-all shadow-xl shadow-slate-200">
+          <button onClick={() => { import("../lib/telemetry.js").then(m => m.logEvent("export_report_pdf_clicked")); window.print(); }} className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-2xl font-bold text-sm hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 print:hidden">
             <SafeIcon icon={FiDownload} /> Export PDF
           </button>
         </div>
@@ -231,7 +231,7 @@ const Reports = () => {
             Generate Detailed Forecast
           </button>
         </div>
-        <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-blue-600/20 rounded-full blur-[100px]" />
+        <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-blue-600/20 rounded-full blur-[100px] print:hidden" />
       </div>
     </div>
   );

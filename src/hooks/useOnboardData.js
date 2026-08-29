@@ -177,6 +177,11 @@ export const useOnboardData = () => {
     setJobs(prev => [{ ...newJob, id: Date.now(), candidates: 0, status: 'Active' }, ...prev]);
   }, []);
 
+  const updateJob = useCallback((jobId, updates) => {
+    setJobs(prev => prev.map(j => (j.id === jobId || String(j.id) === String(jobId)) ? { ...j, ...updates } : j));
+  }, []);
+
+
   const updateCandidateStage = useCallback((candidateId, newStage) => {
     setCandidates(prev => prev.map(c => 
       c.id === candidateId ? { ...c, stage: newStage } : c
@@ -242,5 +247,5 @@ export const useOnboardData = () => {
     }
   }, [candidates, updateCandidateStage]);
 
-  return { jobs, candidates, interviews, branding, addJob, updateCandidateStage, scheduleInterview, updateBranding, approveCandidate, stats, isLoading, error, logout, session };
+  return { jobs, candidates, interviews, branding, addJob, updateJob, updateCandidateStage, scheduleInterview, updateBranding, approveCandidate, stats, isLoading, error, logout, session };
 };

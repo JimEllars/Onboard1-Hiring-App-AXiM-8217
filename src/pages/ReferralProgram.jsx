@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { useOnboardData } from '../hooks/useOnboardData';
 import { motion } from 'framer-motion';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
@@ -8,6 +9,59 @@ const { FiGift, FiUsers, FiLink, FiTrendingUp, FiCheck, FiCopy, FiMail, FiDollar
 const ReferralProgram = () => {
   const [copied, setCopied] = useState(false);
   const [userRef] = useState("EMP" + Math.floor(Math.random() * 900 + 100));
+  const { candidates } = useOnboardData();
+
+  const referralStats = useMemo(() => {
+    const referredCandidates = candidates.filter(c => c.referral_code);
+
+    let totalPending = 0;
+    let convertedCount = 0;
+
+    const referralsList = referredCandidates.map(c => {
+      let reward = '$0';
+      let numericReward = 0;
+
+      const stage = c.stage || 'Applied';
+
+      if (['Applied', 'Screening', 'Video Assessment'].includes(stage)) {
+         reward = '$500';
+         numericReward = 500;
+      } else if (['Interviewing', 'Interview', 'Technical Task', 'Offer'].includes(stage)) {
+         reward = '$1,000';
+         numericReward = 1000;
+      } else if (['Offer / E-Sign', 'Hired'].includes(stage)) {
+         reward = '$2,500';
+         numericReward = 2500;
+      }
+
+      if (['Offer / E-Sign', 'Hired'].includes(stage)) {
+         convertedCount++;
+      }
+
+      totalPending += numericReward;
+
+      return {
+        id: c.id,
+        name: c.name,
+        role: c.role || 'Applicant',
+        status: stage,
+        reward: reward,
+        date: c.applied || 'Recently'
+      };
+    });
+
+    const conversionRate = referredCandidates.length > 0
+       ? Math.round((convertedCount / referredCandidates.length) * 100)
+       : 0;
+
+    return {
+      list: referralsList,
+      total: referredCandidates.length,
+      pending: '$' + totalPending.toLocaleString(),
+      conversion: conversionRate + '%'
+    };
+  }, [candidates]);
+
   const referralLink = `${window.location.origin}/jobs?ref=${userRef}`;
 
   const handleCopy = () => {
@@ -16,11 +70,6 @@ const ReferralProgram = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const referrals = [
-    { id: 1, name: 'Marcus Aurelius', role: 'Product Designer', status: 'Interviewing', reward: '$1,000', date: '2 days ago' },
-    { id: 2, name: 'Lucius Verus', role: 'Backend Engineer', status: 'Hired', reward: '$2,500', date: '1 week ago' },
-    { id: 3, name: 'Commodus Rex', role: 'QA Analyst', status: 'Applied', reward: '$500', date: '3 days ago' },
-  ];
 
   return (
     <div className="space-y-8 pb-20">
@@ -36,9 +85,9 @@ const ReferralProgram = () => {
         <div className="lg:col-span-2 space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              { label: 'Total Referrals', value: '12', icon: FiUsers, color: 'text-blue-600', bg: 'bg-blue-50' },
-              { label: 'Pending Rewards', value: '$1,500', icon: FiGift, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-              { label: 'Conversion Rate', value: '18%', icon: FiTrendingUp, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+              { label: 'Total Referrals', value: referralStats.total.toString(), icon: FiUsers, color: 'text-blue-600', bg: 'bg-blue-50' },
+              { label: 'Pending Rewards', value: referralStats.pending, icon: FiGift, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+              { label: 'Conversion Rate', value: referralStats.conversion, icon: FiTrendingUp, color: 'text-indigo-600', bg: 'bg-indigo-50' },
             ].map((stat, i) => (
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
@@ -62,7 +111,7 @@ const ReferralProgram = () => {
               <h3 className="font-bold text-slate-900">Active Referrals</h3>
             </div>
             <div className="divide-y divide-slate-50">
-              {referrals.map((ref) => (
+              {referralStats.list.map((ref) => (
                 <div key={ref.id} className="p-6 flex items-center justify-between hover:bg-slate-50/50 transition-all">
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center font-bold text-slate-500">

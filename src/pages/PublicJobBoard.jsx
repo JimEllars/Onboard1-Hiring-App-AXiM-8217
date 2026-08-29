@@ -68,6 +68,7 @@ const PublicJobBoard = () => {
         </div>
       </nav>
 
+
       {/* 1. Open Positions Section */}
       <section className="max-w-5xl mx-auto pt-20 pb-12 px-8">
         <motion.div 
@@ -79,13 +80,31 @@ const PublicJobBoard = () => {
           <h1 className="text-5xl md:text-6xl font-black text-slate-900 mt-6 mb-6 tracking-tighter">
             {branding?.headline || 'Open Positions'}
           </h1>
-          <p className="text-xl text-slate-500 font-medium max-w-2xl mx-auto leading-relaxed">
+          <p className="text-xl text-slate-500 font-medium max-w-2xl mx-auto leading-relaxed mb-6">
             Join a fast-growing team of innovators, designers, and engineers dedicated to simplifying the workplace experience.
           </p>
+          <div className="text-sm font-bold text-slate-400 bg-slate-50 inline-block px-4 py-2 rounded-full border border-slate-100">
+            Showing {filteredJobs.length} open position{filteredJobs.length !== 1 ? 's' : ''}
+          </div>
         </motion.div>
 
         <div className="space-y-6">
-          {filteredJobs.map((job, i) => (
+          {filteredJobs.length === 0 ? (
+            <div className="bg-slate-50 border border-slate-200 rounded-[32px] p-12 text-center">
+               <div className="w-16 h-16 bg-slate-200 text-slate-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                 <SafeIcon icon={FiSearch} className="text-3xl" />
+               </div>
+               <h3 className="text-2xl font-black text-slate-900 mb-2">No positions found</h3>
+               <p className="text-slate-500 font-medium max-w-md mx-auto">We couldn't find any open positions matching your search criteria. Please try adjusting your filters or search terms.</p>
+               <button
+                  onClick={() => { setSearch(''); setSelectedDept(''); setSelectedLocation(''); setSelectedType(''); }}
+                  className="mt-6 text-blue-600 font-bold text-sm hover:underline"
+               >
+                 Clear all filters
+               </button>
+            </div>
+          ) : (
+          filteredJobs.map((job, i) => (
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -109,7 +128,7 @@ const PublicJobBoard = () => {
               </div>
               <div className="flex items-center gap-6">
                 <div className="text-right hidden md:block">
-                  <p className="text-lg font-black text-slate-900">{job.salary}</p>
+                  <p className="text-lg font-black text-slate-900">{job.salary || 'Competitive'}</p>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Est. Salary</p>
                 </div>
                 <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center text-slate-900 group-hover:bg-blue-600 group-hover:text-white transition-all">
@@ -117,10 +136,10 @@ const PublicJobBoard = () => {
                 </div>
               </div>
             </motion.div>
-          ))}
+          ))
+          )}
         </div>
       </section>
-
       {/* 2. Search Section */}
       <section className="bg-slate-50 py-24 px-8 border-y border-slate-100 relative overflow-hidden">
         <div className="max-w-4xl mx-auto text-center relative z-10">

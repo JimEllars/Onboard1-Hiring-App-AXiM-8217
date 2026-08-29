@@ -5,7 +5,7 @@ import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 import { useOnboardData } from '../hooks/useOnboardData';
 
-const { FiPlus, FiMapPin, FiClock, FiUsers, FiMoreVertical, FiX, FiCheck, FiChevronRight, FiBriefcase, FiDollarSign } = FiIcons;
+const { FiLink, FiCopy, FiPlus, FiMapPin, FiClock, FiUsers, FiMoreVertical, FiX, FiCheck, FiChevronRight, FiBriefcase, FiDollarSign } = FiIcons;
 
 const CreateJobModal = ({ isOpen, onClose, onPublish }) => {
   const [step, setStep] = useState(1);
@@ -225,9 +225,32 @@ const Jobs = () => {
             </button>
             
             <div className="mb-8">
-              <span className={`inline-block px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest mb-6 border ${job.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-50 text-slate-500 border-slate-100'}`}>
-                {job.status}
-              </span>
+
+              <div className="flex justify-between items-start mb-6">
+                <span className={`inline-block px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border ${job.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-amber-50 text-amber-700 border-amber-100'}`}>
+                  {job.status === 'Active' ? 'Active' : 'Paused'}
+                </span>
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const url = `${window.location.origin}/jobs?ref=EMP123`;
+                    navigator.clipboard.writeText(url);
+                    const btn = e.currentTarget;
+                    const originalHTML = btn.innerHTML;
+                    btn.innerHTML = `<span class="flex items-center gap-2"><svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Copied</span>`;
+                    btn.classList.add('text-emerald-600', 'bg-emerald-50');
+                    setTimeout(() => {
+                      btn.innerHTML = originalHTML;
+                      btn.classList.remove('text-emerald-600', 'bg-emerald-50');
+                    }, 2000);
+                  }}
+                  className="px-3 py-1.5 bg-slate-50 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg text-[10px] font-bold uppercase flex items-center gap-1.5 transition-all"
+                >
+                  <SafeIcon icon={FiLink} /> Share
+                </button>
+              </div>
+
               <h3 className="text-2xl font-black text-slate-900 leading-tight mb-2 group-hover:text-blue-600 transition-colors">{job.title}</h3>
               <p className="text-sm text-slate-500 font-bold uppercase tracking-tighter">{job.dept}</p>
             </div>

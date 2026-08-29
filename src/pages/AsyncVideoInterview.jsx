@@ -12,6 +12,8 @@ const AsyncVideoInterview = () => {
   const [hasPermissions, setHasPermissions] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [recordedVideoUrl, setRecordedVideoUrl] = useState(null);
+  const recordedChunksRef = useRef([]);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   const videoRef = useRef(null);
@@ -59,6 +61,7 @@ const AsyncVideoInterview = () => {
     if (event.data && event.data.size > 0) {
       const currentChunkIndex = chunkIndexRef.current++;
       const blob = event.data;
+      recordedChunksRef.current.push(blob);
 
       try {
         // 1. Fetch Presigned URL
@@ -106,6 +109,8 @@ const AsyncVideoInterview = () => {
     if (!streamRef.current) return;
 
     chunkIndexRef.current = 0;
+    recordedChunksRef.current = [];
+    setRecordedVideoUrl(null);
 
     // We try multiple mime types since support varies by browser
     const mimeTypes = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'];
@@ -132,6 +137,13 @@ const AsyncVideoInterview = () => {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
       setHasRecorded(true);
+      // Create local video URL for preview
+      setTimeout(() => {
+        const fullBlob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
+        const videoUrl = URL.createObjectURL(fullBlob);
+        setRecordedVideoUrl(videoUrl);
+      }, 500);
+
     }
   };
 
@@ -205,13 +217,22 @@ const AsyncVideoInterview = () => {
 
               <div className="relative aspect-video bg-slate-900 rounded-[32px] overflow-hidden shadow-2xl border-4 border-slate-100 flex items-center justify-center">
                 {/* Actual video feed */}
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  muted
-                  playsInline
-                  className="absolute inset-0 w-full h-full object-cover transform scale-x-[-1]"
-                />
+                {hasRecorded && recordedVideoUrl ? (
+                  <video
+                    src={recordedVideoUrl}
+                    controls
+                    autoPlay
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                ) : (
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    muted
+                    playsInline
+                    className="absolute inset-0 w-full h-full object-cover transform scale-x-[-1]"
+                  />
+                )}
                 {hasPermissions === false && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center text-red-500 bg-slate-900 z-10 px-6 text-center">
                     <SafeIcon icon={FiAlertCircle} className="text-6xl mb-4 opacity-80" />
@@ -250,7 +271,7 @@ const AsyncVideoInterview = () => {
                 ) : (
                   <div className="flex gap-4 w-full sm:w-auto">
                     <button
-                      onClick={() => setHasRecorded(false)}
+                      onClick={() => { setHasRecorded(false); setRecordedVideoUrl(null); recordedChunksRef.current = []; if (videoRef.current && streamRef.current) videoRef.current.srcObject = streamRef.current; }}
                       className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-8 py-5 bg-slate-100 text-slate-700 rounded-2xl font-black hover:bg-slate-200 transition-all"
                     >
                       Retake

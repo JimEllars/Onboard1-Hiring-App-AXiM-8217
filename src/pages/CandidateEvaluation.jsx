@@ -7,13 +7,14 @@ import SafeIcon from '../common/SafeIcon';
 import { supabase } from '../lib/supabaseClient';
 import { useOnboardData } from '../hooks/useOnboardData';
 
-const { FiStar, FiMessageSquare, FiCheck, FiX, FiArrowLeft, FiAlertCircle, FiClock, FiShield } = FiIcons;
+const { FiStar, FiMessageSquare, FiCheck, FiX, FiArrowLeft, FiAlertCircle, FiClock, FiShield, FiVideo, FiPlay } = FiIcons;
 
 const CandidateEvaluation = () => {
   const { id } = useParams();
   const userRole = "Hiring Manager";
   const navigate = useNavigate();
   const { updateCandidateStage } = useOnboardData();
+  const [activeTab, setActiveTab] = useState('evaluation');
   const [ratings, setRatings] = useState({
     technical: 0,
     culture: 0,
@@ -114,6 +115,10 @@ const CandidateEvaluation = () => {
     { key: 'communication', label: 'Communication', desc: 'Ability to articulate ideas and collaborate.' },
     { key: 'problemSolving', label: 'Problem Solving', desc: 'Analytical thinking and creative approach.' }
   ];
+
+  const handleVideoPlay = () => {
+    logEvent(TELEMETRY_EVENTS.CANDIDATE_PIPELINE_EVENT, { stage: 'video_response_reviewed', candidateId: id });
+  };
 
   const handleRating = (key, value) => {
     setRatings(prev => ({ ...prev, [key]: value }));
@@ -282,7 +287,60 @@ const CandidateEvaluation = () => {
         </div>
 
         {/* AI Assist Panel */}
-        <div className="mb-12 bg-indigo-50 border border-indigo-100 rounded-3xl p-8 shadow-sm">
+
+        {/* Tabs */}
+        <div className="flex border-b border-slate-200 mb-8">
+          <button
+            onClick={() => setActiveTab('evaluation')}
+            className={`px-6 py-4 font-bold text-sm transition-colors border-b-2 ${activeTab === 'evaluation' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-900'}`}
+          >
+            Evaluation Rubric
+          </button>
+          <button
+            onClick={() => setActiveTab('video')}
+            className={`px-6 py-4 font-bold text-sm transition-colors border-b-2 flex items-center gap-2 ${activeTab === 'video' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-900'}`}
+          >
+            <SafeIcon icon={FiVideo} /> Video Assessment
+          </button>
+        </div>
+
+        {activeTab === 'video' ? (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="bg-slate-900 rounded-3xl overflow-hidden shadow-2xl relative aspect-video flex flex-col justify-end">
+               <video
+                  controls
+                  className="absolute inset-0 w-full h-full object-cover"
+                  poster="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=800&q=80"
+                  onPlay={handleVideoPlay}
+                  src="https://www.w3schools.com/html/mov_bbb.mp4"
+               >
+               </video>
+               {/* Custom overlay/controls mock */}
+               <div className="absolute top-4 right-4 bg-black/50 backdrop-blur px-3 py-1.5 rounded-full text-white text-xs font-bold flex items-center gap-2">
+                 <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                 Response 1 of 5
+               </div>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6">
+              <h3 className="font-bold text-slate-900 flex items-center gap-2 mb-2">
+                <SafeIcon icon={FiMessageSquare} className="text-blue-600" /> Prompt
+              </h3>
+              <p className="text-slate-700 text-sm">Please introduce yourself, briefly describe your past experience, and explain why you're interested in joining our team. You have up to 3 minutes.</p>
+            </div>
+
+            <div className="flex gap-2 mt-4 overflow-x-auto pb-2">
+               {[1, 2, 3, 4, 5].map(q => (
+                 <button key={q} className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${q === 1 ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>
+                   Question {q}
+                 </button>
+               ))}
+            </div>
+          </div>
+        ) : (
+          <React.Fragment>
+            {/* AI Assist Panel */}
+          <div className="mb-12 bg-indigo-50 border border-indigo-100 rounded-3xl p-8 shadow-sm">
           <div className="flex items-start justify-between mb-6">
             <div>
               <h3 className="text-xl font-black text-indigo-900 flex items-center gap-2">
@@ -350,6 +408,9 @@ const CandidateEvaluation = () => {
           ))}
         </div>
 
+        </React.Fragment>
+        )}
+
         <div className="mt-12 space-y-4">
           <label className="flex items-center gap-2 text-sm font-bold text-slate-900">
             <SafeIcon icon={FiMessageSquare} /> Overall Feedback
@@ -369,7 +430,7 @@ const CandidateEvaluation = () => {
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {userRole === "Hiring Manager" ? (
-              <>
+              <React.Fragment>
             <button 
               onClick={() => handleSubmit('hire')}
               disabled={isSubmitting || backgroundStatus !== 'clear'}
@@ -398,7 +459,7 @@ const CandidateEvaluation = () => {
             >
               <SafeIcon icon={FiX} /> {showDisposition ? 'Confirm Reject' : 'Do Not Hire'}
             </button>
-              </>
+              </React.Fragment>
             ) : (
               <div className="col-span-3 text-center text-slate-500 font-bold p-4 bg-white rounded-xl border border-slate-200">Only Hiring Managers can make final decisions.</div>
             )}

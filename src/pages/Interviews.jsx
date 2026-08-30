@@ -180,7 +180,11 @@ const Interviews = () => {
           scheduleInterview(data);
           const candidate = candidates.find(c => c.name === data.candidate);
           if (candidate) {
-             updateCandidateStage(candidate.id, 'Interview');
+             const earlyStages = ['Applied', 'Fit Survey', 'Video Assessment'];
+             if (earlyStages.includes(candidate.stage)) {
+               updateCandidateStage(candidate.id, 'Live Interview');
+             }
+             window.dispatchEvent(new CustomEvent('new-notification', { detail: { message: `Interview Scheduled for ${candidate.name}`, type: 'success' } }));
           }
         }}
       />

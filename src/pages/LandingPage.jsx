@@ -16,7 +16,7 @@ const LandingPage = () => {
     { icon: FiVideo, title: 'Async Video Interviews', desc: 'Allow candidates to record responses on their own time.' },
     { icon: FiCalendar, title: 'Live WebRTC Scheduling', desc: 'Seamlessly schedule and conduct live video interviews.' },
     { icon: FiShield, title: 'Checkr Screenings', desc: 'Automated background checks integrated directly into your pipeline.' },
-    { icon: FiCheckCircle, title: 'Remote Offer Execution', desc: 'Send and sign offer letters digitally with DocuSign integration.' }
+    { icon: FiCheckCircle, title: 'Remote Offer Execution', desc: 'Send and sign offer letters digitally with AXiM proprietary internal e-sign technology.' }
   ];
 
   return (

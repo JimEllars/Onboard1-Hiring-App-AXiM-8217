@@ -23,6 +23,7 @@ import Profile from './pages/Profile';
 import PublicJobBoard from './pages/PublicJobBoard';
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
+import AuthCallback from './pages/AuthCallback';
 import ProtectedRoute from './components/ProtectedRoute';
 import ApplicationForm from './pages/ApplicationForm';
 import JobOffer from './pages/JobOffer';
@@ -39,6 +40,7 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/jobs" element={<PublicJobBoard />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/apply/questionnaire" element={<Questionnaire />} />
         <Route path="/apply/video-assessment" element={<AsyncVideoInterview />} />
         <Route path="/apply/schedule" element={<InterviewScheduling />} />

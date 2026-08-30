@@ -1,4 +1,10 @@
-/**
+import os
+
+filepath = 'src/lib/telemetry.js'
+with open(filepath, 'r') as f:
+    content = f.read()
+
+new_content = """/**
  * Lightweight telemetry utility to capture non-PII events
  * Interfaces with Cloudflare Web Analytics when available.
  */
@@ -69,3 +75,7 @@ export const logEvent = (eventName, data = {}) => {
     // Fail silently for telemetry
   });
 };
+"""
+
+with open(filepath, 'w') as f:
+    f.write(new_content)

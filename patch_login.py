@@ -1,4 +1,10 @@
-import React, { useEffect } from 'react';
+import os
+
+filepath = 'src/pages/Login.jsx'
+with open(filepath, 'r') as f:
+    content = f.read()
+
+new_content = """import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { logEvent, TELEMETRY_EVENTS } from '../lib/telemetry';
@@ -22,3 +28,7 @@ const Login = () => {
 };
 
 export default Login;
+"""
+
+with open(filepath, 'w') as f:
+    f.write(new_content)

@@ -1,4 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import os
+
+filepath = 'src/components/ProtectedRoute.jsx'
+with open(filepath, 'r') as f:
+    content = f.read()
+
+# Replace the failsafe logic with correct redirection
+new_content = """import React, { useEffect, useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 
@@ -56,3 +63,7 @@ const ProtectedRoute = ({ children }) => {
 };
 
 export default ProtectedRoute;
+"""
+
+with open(filepath, 'w') as f:
+    f.write(new_content)

@@ -1,5 +1,37 @@
-import { createClient } from '@supabase/supabase-js';
-export async function sendMagicLinkEmail(email, token, env, origin) {
+import re
+
+with open('functions/utils/email.js', 'r') as f:
+    content = f.read()
+
+# Add supabase client import if not exists
+if "import { createClient } from '@supabase/supabase-js';" not in content:
+    content = "import { createClient } from '@supabase/supabase-js';\n" + content
+
+
+# Helper to log to API usage logs
+log_helper = """
+async function logApiUsage(env, endpoint, provider, status) {
+  if (env.SUPABASE_URL && env.SUPABASE_SERVICE_KEY) {
+    const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_KEY);
+    await supabase.from('api_usage_logs').insert([{
+      endpoint,
+      method: 'POST',
+      status,
+      latency_ms: 100, // mock
+      provider,
+      created_at: new Date().toISOString()
+    }]);
+  }
+}
+"""
+
+if "async function logApiUsage" not in content:
+    content += log_helper
+
+
+# Now replace sendMagicLinkEmail
+magic_link_pattern = r"export async function sendMagicLinkEmail\(email, token, env, origin\) \{.*?return responseData;\n\}"
+new_magic_link = """export async function sendMagicLinkEmail(email, token, env, origin) {
   const baseUrl = origin || 'http://localhost:5173';
   const verificationUrl = `${baseUrl}/api/verify?token=${token}`;
 
@@ -30,9 +62,13 @@ export async function sendMagicLinkEmail(email, token, env, origin) {
 
   await logApiUsage(env, '/api/emails/magic-link', result.provider, 200);
   return result.data;
-}
+}"""
+content = re.sub(magic_link_pattern, new_magic_link, content, flags=re.DOTALL)
 
-export async function sendStageAdvancementEmail(email, stage, token, env, origin) {
+
+# Replace sendStageAdvancementEmail
+stage_adv_pattern = r"export async function sendStageAdvancementEmail\(email, stage, token, env, origin\) \{.*?return responseData;\n\}"
+new_stage_adv = """export async function sendStageAdvancementEmail(email, stage, token, env, origin) {
   const baseUrl = origin || 'http://localhost:5173';
   let subject = '';
   let headline = '';
@@ -87,10 +123,13 @@ export async function sendStageAdvancementEmail(email, stage, token, env, origin
 
   await logApiUsage(env, `/api/emails/stage-advancement/${stage}`, result.provider, 200);
   return result.data;
-}
+}"""
+content = re.sub(stage_adv_pattern, new_stage_adv, content, flags=re.DOTALL)
 
 
-export async function sendRejectionEmail(email, env) {
+# Replace sendRejectionEmail
+rejection_pattern = r"export async function sendRejectionEmail\(email, env\) \{.*?return await response\.json\(\);\n\}"
+new_rejection = """export async function sendRejectionEmail(email, env) {
   const htmlContent = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eaeaea; border-radius: 8px;">
       <h2 style="color: #333; margin-top: 0;">Application Status Update</h2>
@@ -110,90 +149,8 @@ export async function sendRejectionEmail(email, env) {
 
   await logApiUsage(env, '/api/emails/rejection', result.provider, 200);
   return result.data;
-}
+}"""
+content = re.sub(rejection_pattern, new_rejection, content, flags=re.DOTALL)
 
-
-export async function sendHiringEmail({ to, subject, html, attachments, env }) {
-  const emailitApiKey = env.EMAILIT_API_KEY || env.RESEND_API_KEY; // Fallback to RESEND if not set for testing
-  const resendApiKey = env.RESEND_API_KEY;
-
-  if (!resendApiKey) {
-    throw new Error("RESEND_API_KEY is not set.");
-  }
-
-  const from = 'Acme Hiring <onboarding@resend.dev>'; // Using resend.dev for test purposes
-
-  // Primary: EmailIt
-  try {
-    const payload = {
-      from,
-      to: Array.isArray(to) ? to : [to],
-      subject,
-      html,
-      attachments
-    };
-
-    const response = await fetch('https://api.emailit.com/v2/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${emailitApiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      return { success: true, provider: 'emailit', data };
-    } else {
-      console.warn(`EmailIt failed with status ${response.status}. Falling back to Resend.`);
-    }
-  } catch (error) {
-    console.warn(`EmailIt request error: ${error.message}. Falling back to Resend.`);
-  }
-
-  // Fallback: Resend
-  try {
-    const payload = {
-      from,
-      to: Array.isArray(to) ? to : [to],
-      subject,
-      html,
-      attachments
-    };
-
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${resendApiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      return { success: true, provider: 'resend', data };
-    } else {
-      const errorData = await response.text();
-      throw new Error(`Failed to send email via Resend API: ${response.status} ${errorData}`);
-    }
-  } catch (error) {
-    console.error(`Both primary and fallback email providers failed.`, error);
-    throw error;
-  }
-}
-
-async function logApiUsage(env, endpoint, provider, status) {
-  if (env.SUPABASE_URL && env.SUPABASE_SERVICE_KEY) {
-    const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_KEY);
-    await supabase.from('api_usage_logs').insert([{
-      endpoint,
-      method: 'POST',
-      status,
-      latency_ms: 100, // mock
-      provider,
-      created_at: new Date().toISOString()
-    }]);
-  }
-}
+with open('functions/utils/email.js', 'w') as f:
+    f.write(content)

@@ -24,3 +24,10 @@ dist-ssr
 *.sw?
 .env.wrangler/
 .wrangler
+patch_*.py
+fix_*.py
+test_*.py
+update_*.py
+sprint-*.patch
+test_*.js
+run_*.js

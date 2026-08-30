@@ -29,7 +29,7 @@ const CandidateProgress = () => {
   const [stages, setStages] = useState(CANONICAL_STAGES.map(s => ({ name: s, status: 'pending', duration: '-', date: '-' })));
 
   useEffect(() => {
-    logEvent(TELEMETRY_EVENTS.CANDIDATE_STEPPER_VIEWED || 'candidate_stepper_viewed', { candidateId: id });
+    logEvent('candidate_portal_viewed', { candidateId: id });
     const foundCandidate = candidates.find(c => c.id === parseInt(id));
     if (foundCandidate) {
       setCandidate(prev => ({
@@ -55,23 +55,24 @@ const CandidateProgress = () => {
 
   const getCtaLabel = (stageName) => {
     switch (stageName) {
-      case 'Applied': return 'Continue to Video Assessment';
-      case 'Video Assessment': return 'Schedule Live Interview';
-      case 'Live Interview': return 'Review & Sign Offer';
-      case 'Offer / E-Sign': return 'Finalize Hire';
+      case 'Fit Survey': return 'Complete Fit Survey';
+      case 'Video Assessment': return 'Start Video Assessment';
+      case 'Live Interview': return 'Schedule Live Interview';
+      case 'Offer / E-Sign': return 'Review & Sign Offer';
       default: return 'Move to Next Stage';
     }
   };
 
   const getCtaAction = (stageName) => {
-    logEvent(TELEMETRY_EVENTS.TASK_ACTION_CLICKED || 'task_action_clicked', { candidateId: id, currentStage: stageName });
-    if (stageName === 'Applied') {
-       // Mock action, can also be real route
-       navigate(`/apply/video-assessment`);
+    logEvent(TELEMETRY_EVENTS.TASK_ACTION_CLICKED || 'task_action_clicked', { candidateId: candidate.id, currentStage: stageName });
+    if (stageName === 'Fit Survey') {
+       navigate(`/apply/questionnaire?verified=true&candidateId=${candidate.id}`);
     } else if (stageName === 'Video Assessment') {
-       navigate(`/apply/schedule`);
+       navigate(`/apply/video-assessment?candidateId=${candidate.id}`);
     } else if (stageName === 'Live Interview') {
-       navigate(`/offer/${id}`);
+       navigate(`/apply/schedule?candidateId=${candidate.id}`);
+    } else if (stageName === 'Offer / E-Sign') {
+       navigate(`/offer/${candidate.id}`);
     } else {
        handleMoveToNextStage();
     }

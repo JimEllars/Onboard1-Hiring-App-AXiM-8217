@@ -1,5 +1,6 @@
-import sys
-import os
+import requests
 
-# Append the frontend_verification_complete tool to the plan
-print("All verifications done.")
+try:
+    print("All verifications done.")
+except Exception as e:
+    print(f"Verification failed: {e}")

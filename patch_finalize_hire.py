@@ -1,4 +1,13 @@
-import { createClient } from '@supabase/supabase-js';
+import os
+
+filepath = 'functions/api/finalize-hire.js'
+with open(filepath, 'r') as f:
+    content = f.read()
+
+# We need to add the user provisioning and CRM contact updates,
+# insertion into public.onboarding_tasks and sending the welcome email.
+
+new_content = """import { createClient } from '@supabase/supabase-js';
 import { successResponse, errorResponse, handleOptions, getCorsHeaders } from '../utils/response.js';
 import { syncPayload } from '../utils/sync.js';
 import { sendHiringEmail } from '../utils/email.js';
@@ -252,3 +261,7 @@ export async function onRequestPost({ request, env }) {
     return errorResponse(error.message, "INTERNAL_ERROR", 500, headers);
   }
 }
+"""
+
+with open(filepath, 'w') as f:
+    f.write(new_content)

@@ -37,3 +37,9 @@ Successfully implemented dynamic workflow step building and organizational quota
 - **Marketplace Integration Configuration Modals:** Configured integration drawers/modals for Slack (Webhook URL, Channel), Google Workspace (Calendar Sync, API Token), and Greenhouse/Lever (Webhook Secret, ATS Endpoint) with telemetry logging.
 - **Live Automation Trigger Execution:** Wired automation settings toggles, implemented "Run Stagnation Check" button for the Document Stagnation trigger, and added execution logging upon offer acceptance.
 - **Multi-Select Batch Candidate Operations:** Added batch selection checkboxes to List and Grid views in the Candidates pipeline. Introduced a floating Batch Actions toolbar for advancing candidates, sending reminders, and exporting candidate data to CSV.
+
+### Sprint 3.4 Updates
+- **Onboarding Database Persistence**: Wired `OnboardingDetail.jsx` to fetch task statuses from `onboarding_tasks` and update Supabase securely. Dynamically calculate progress and dispatch telemetry.
+- **Passport SSO Role Hydration**: Updated `useOnboardData.js` to wait for a valid Supabase session before querying the candidate/job tables. Wired it to lookup the current authenticating user's role from `user_roles`. Added role-based overrides in `JobDetails.jsx`, `CandidateEvaluation.jsx`, and passed `userRole` downwards into the `Sidebar` from `Layout`.
+- **Candidate Evaluation Hook Cleanup & Video Stream Binding**: Refactored `CandidateEvaluation.jsx` to remove duplicated `fetchAiData` hooks. Wired the video assessment tab to play the current candidate's `video_url` (with a default fallback). The prompt buttons change the video timestamp (`#t=`) as well as the UI.
+- **Live Telemetry & Audit Stream Viewer**: Wired the "Audit & Usage Logs" tab in `Reports.jsx` to query the `api_usage_logs` table. Created a robust filtering system displaying all formatted details.

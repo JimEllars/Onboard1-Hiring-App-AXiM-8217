@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { supabase } from '../lib/supabaseClient';
 import { useOnboardData } from '../hooks/useOnboardData';
 import { motion } from 'framer-motion';
 import * as FiIcons from 'react-icons/fi';
@@ -7,9 +8,21 @@ import SafeIcon from '../common/SafeIcon';
 const { FiGift, FiUsers, FiLink, FiTrendingUp, FiCheck, FiCopy, FiMail, FiDollarSign } = FiIcons;
 
 const ReferralProgram = () => {
-  const [copied, setCopied] = useState(false);
+const [copied, setCopied] = useState(false);
   const [userRef] = useState("EMP" + Math.floor(Math.random() * 900 + 100));
   const { candidates } = useOnboardData();
+  const [referralsData, setReferralsData] = useState([]);
+
+  useEffect(() => {
+    const fetchReferrals = async () => {
+      if (!supabase) return;
+      const { data, error } = await supabase.from('onboard1_referrals').select('*');
+      if (data && !error) {
+        setReferralsData(data);
+      }
+    };
+    fetchReferrals();
+  }, []);
 
   const referralStats = useMemo(() => {
     const referredCandidates = candidates.filter(c => c.referral_code);
@@ -23,22 +36,30 @@ const ReferralProgram = () => {
 
       const stage = c.stage || 'Applied';
 
-      if (['Applied', 'Screening', 'Video Assessment'].includes(stage)) {
-         reward = '$500';
-         numericReward = 500;
-      } else if (['Interviewing', 'Interview', 'Technical Task', 'Offer'].includes(stage)) {
-         reward = '$1,000';
-         numericReward = 1000;
-      } else if (['Offer / E-Sign', 'Hired'].includes(stage)) {
-         reward = '$2,500';
-         numericReward = 2500;
-      }
+      const dbReferral = referralsData.find(r => r.candidate_id === c.id);
 
-      if (['Offer / E-Sign', 'Hired'].includes(stage)) {
+      if (dbReferral && dbReferral.status === 'approved') {
+         reward = `$${dbReferral.reward_amount.toLocaleString()} Approved`;
          convertedCount++;
-      }
+         // not adding to pending if approved/paid, but if we need to show pending separately:
+      } else {
+        if (['Applied', 'Screening', 'Video Assessment'].includes(stage)) {
+           reward = '$500';
+           numericReward = 500;
+        } else if (['Interviewing', 'Interview', 'Technical Task', 'Offer'].includes(stage)) {
+           reward = '$1,000';
+           numericReward = 1000;
+        } else if (['Offer / E-Sign', 'Hired'].includes(stage)) {
+           reward = '$2,500';
+           numericReward = 2500;
+        }
 
-      totalPending += numericReward;
+        if (['Offer / E-Sign', 'Hired'].includes(stage)) {
+           convertedCount++;
+        }
+
+        totalPending += numericReward;
+      }
 
       return {
         id: c.id,
@@ -60,7 +81,7 @@ const ReferralProgram = () => {
       pending: '$' + totalPending.toLocaleString(),
       conversion: conversionRate + '%'
     };
-  }, [candidates]);
+  }, [candidates, referralsData]);
 
   const referralLink = `${window.location.origin}/jobs?ref=${userRef}`;
 

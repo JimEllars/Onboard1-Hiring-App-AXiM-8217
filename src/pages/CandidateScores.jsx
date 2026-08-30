@@ -1,18 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 import ReactECharts from 'echarts-for-react';
+import { useOnboardData } from '../hooks/useOnboardData';
+import { supabase } from '../lib/supabaseClient';
+import { logEvent } from '../lib/telemetry';
 
 const { FiArrowLeft, FiCheckCircle, FiXCircle, FiMessageSquare, FiUser, FiAward, FiTarget, FiTrendingUp, FiStar, FiCheck } = FiIcons;
 
 const CandidateScores = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { candidates } = useOnboardData();
 
   const [aiData, setAiData] = useState(null);
   const [aiLoading, setAiLoading] = useState(true);
+
+  const [evalsData, setEvalsData] = useState([]);
+  const [loadingEvals, setLoadingEvals] = useState(true);
+
+  useEffect(() => {
+    logEvent('candidate_scores_viewed', { candidateId: id });
+  }, [id]);
 
   useEffect(() => {
     const fetchAiData = async () => {
@@ -38,17 +49,49 @@ const CandidateScores = () => {
     fetchAiData();
   }, [id]);
 
-  // Mock aggregated data
-  const candidate = {
+  useEffect(() => {
+    const fetchEvaluations = async () => {
+      setLoadingEvals(true);
+      if (!supabase) {
+        setLoadingEvals(false);
+        return;
+      }
+      try {
+        const { data, error } = await supabase.from('onboard1_evaluations').select('*').eq('candidate_id', id);
+        if (data && data.length > 0) {
+          // Map DB records to UI model
+          const mapped = data.map(d => ({
+            interviewer: d.interviewer_name || 'Interviewer',
+            role: d.interviewer_role || 'Staff',
+            date: new Date(d.created_at).toLocaleDateString(),
+            scores: {
+              technical: d.score_technical || 0,
+              culture: d.score_culture || 0,
+              communication: d.score_communication || 0,
+              problemSolving: d.score_problem_solving || 0
+            },
+            comment: d.feedback || '',
+            decision: d.decision || 'No Decision'
+          }));
+          setEvalsData(mapped);
+        }
+      } catch (err) {
+        console.error("Failed to load evaluations", err);
+      } finally {
+        setLoadingEvals(false);
+      }
+    };
+    fetchEvaluations();
+  }, [id]);
+
+  // Fallback mocks
+  const mockCandidate = {
     name: 'Eleanor Pena',
     role: 'Senior Frontend Engineer',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-    overallScore: 4.2,
-    totalEvaluations: 3,
-    recommendation: 'Hire',
+    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80'
   };
 
-  const evaluations = [
+  const mockEvaluations = [
     {
       interviewer: 'Sarah Jenkins',
       role: 'Recruiter',
@@ -75,6 +118,45 @@ const CandidateScores = () => {
     }
   ];
 
+  const candidateInfo = candidates.find(c => String(c.id) === id) || mockCandidate;
+  const evaluations = evalsData.length > 0 ? evalsData : mockEvaluations;
+
+  const aggregatedScores = useMemo(() => {
+    let t = 0, cu = 0, co = 0, p = 0;
+    evaluations.forEach(e => {
+      t += e.scores.technical;
+      cu += e.scores.culture;
+      co += e.scores.communication;
+      p += e.scores.problemSolving;
+    });
+    const len = evaluations.length || 1;
+    return {
+      technical: (t / len).toFixed(1),
+      culture: (cu / len).toFixed(1),
+      communication: (co / len).toFixed(1),
+      problemSolving: (p / len).toFixed(1)
+    };
+  }, [evaluations]);
+
+  const overallScore = useMemo(() => {
+    const avg = (parseFloat(aggregatedScores.technical) + parseFloat(aggregatedScores.culture) + parseFloat(aggregatedScores.communication) + parseFloat(aggregatedScores.problemSolving)) / 4;
+    return avg.toFixed(1);
+  }, [aggregatedScores]);
+
+  const recommendation = useMemo(() => {
+    if (parseFloat(overallScore) >= 4.5) return 'Strong Hire';
+    if (parseFloat(overallScore) >= 3.5) return 'Hire';
+    return 'Pass';
+  }, [overallScore]);
+
+  const candidate = {
+    ...candidateInfo,
+    overallScore,
+    totalEvaluations: evaluations.length,
+    recommendation,
+  };
+
+
   const radarOption = {
     radar: {
       indicator: [
@@ -94,7 +176,7 @@ const CandidateScores = () => {
       type: 'radar',
       data: [
         {
-          value: [4, 4.3, 4, 4.3],
+          value: [aggregatedScores.technical, aggregatedScores.culture, aggregatedScores.communication, aggregatedScores.problemSolving],
           name: 'Average Score',
           symbol: 'none',
           itemStyle: { color: '#3b82f6' },
@@ -202,10 +284,10 @@ const CandidateScores = () => {
               <SafeIcon icon={FiTrendingUp} className="text-indigo-600" /> Score Distribution
             </h3>
             {[
-              { label: 'Technical', score: 4.0, color: 'bg-blue-500' },
-              { label: 'Culture Fit', score: 4.3, color: 'bg-indigo-500' },
-              { label: 'Communication', score: 4.0, color: 'bg-purple-500' },
-              { label: 'Problem Solving', score: 4.3, color: 'bg-emerald-500' }
+              { label: 'Technical', score: aggregatedScores.technical, color: 'bg-blue-500' },
+              { label: 'Culture Fit', score: aggregatedScores.culture, color: 'bg-indigo-500' },
+              { label: 'Communication', score: aggregatedScores.communication, color: 'bg-purple-500' },
+              { label: 'Problem Solving', score: aggregatedScores.problemSolving, color: 'bg-emerald-500' }
             ].map((stat, i) => (
               <div key={i}>
                 <div className="flex justify-between items-end mb-2">

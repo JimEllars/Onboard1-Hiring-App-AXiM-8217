@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as FiIcons from 'react-icons/fi';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { trackVideoUploaded } from '../lib/telemetry';
 import SafeIcon from '../common/SafeIcon';
 
 const { FiVideo, FiMic, FiSettings, FiCheckCircle, FiPlay, FiSquare, FiAlertCircle } = FiIcons;
@@ -16,14 +17,27 @@ const AsyncVideoInterview = () => {
   const recordedChunksRef = useRef([]);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
+  const PROMPTS = [
+    { title: "Introduction", text: "Please introduce yourself, briefly describe your past experience, and explain why you're interested in joining our team. You have up to 3 minutes." },
+    { title: "Technical Background", text: "Describe a challenging technical problem you've solved recently. What was your approach and what did you learn?" },
+    { title: "Problem Solving", text: "Tell us about a time you had to learn a new technology or tool quickly to complete a project." },
+    { title: "Collaboration", text: "Describe a situation where you had a disagreement with a team member. How did you resolve it?" },
+    { title: "Career Goals", text: "Where do you see yourself in 3-5 years, and how does this role align with your goals?" }
+  ];
+  const [currentPromptIndex, setCurrentPromptIndex] = useState(0);
+  const [recordedAnswers, setRecordedAnswers] = useState({});
+
+
   const videoRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const chunkIndexRef = useRef(0);
   const streamRef = useRef(null);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
-  // We need a dummy candidate ID for this sprint if we don't have one in context
-  const candidateId = 'candidate-123';
+  // Extract candidateId and token from searchParams, fallback if omitted
+  const candidateId = searchParams.get('candidateId') || 'candidate-123';
+  const token = searchParams.get('token');
 
   useEffect(() => {
     let active = true;
@@ -72,6 +86,7 @@ const AsyncVideoInterview = () => {
           },
           body: JSON.stringify({
             candidateId,
+
             chunkIndex: currentChunkIndex,
           }),
         });
@@ -148,6 +163,22 @@ const AsyncVideoInterview = () => {
   };
 
   const handleSubmit = async () => {
+    // If not the last question, go to the next one
+    if (currentPromptIndex < PROMPTS.length - 1) {
+      setRecordedAnswers(prev => ({ ...prev, [currentPromptIndex]: recordedVideoUrl }));
+      setCurrentPromptIndex(prev => prev + 1);
+
+      // Reset state for next question
+      setHasRecorded(false);
+      setRecordedVideoUrl(null);
+      recordedChunksRef.current = [];
+      if (videoRef.current && streamRef.current) {
+        videoRef.current.srcObject = streamRef.current;
+      }
+      return;
+    }
+
+    // It is the last question, submit everything
     setIsSubmitting(true);
     try {
       const res = await fetch('/api/submit-video', {
@@ -157,6 +188,8 @@ const AsyncVideoInterview = () => {
         },
         body: JSON.stringify({
           candidateId,
+
+          token
         }),
       });
 
@@ -164,12 +197,13 @@ const AsyncVideoInterview = () => {
         throw new Error('Failed to submit video');
       }
 
-
       setIsSubmitted(true);
+      trackVideoUploaded(candidateId);
 
       // Dispatch event for Dashboard sync
       window.dispatchEvent(new CustomEvent('candidate-stage-updated', {
-        detail: { candidateId, newStage: 'Interview Review' }
+        detail: { candidateId,
+ newStage: 'Interview Review' }
       }));
 
       // Wait for a few seconds to show the success message, then navigate to next step
@@ -197,7 +231,7 @@ const AsyncVideoInterview = () => {
             <div className="p-8 md:p-12 border-b border-slate-100 flex justify-between items-center bg-white z-10 relative">
               <div>
                 <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">Video Assessment</h1>
-                <p className="text-slate-500 font-medium mt-2">Question 1 of 5: Introduction & Background</p>
+                <p className="text-slate-500 font-medium mt-2">Question {currentPromptIndex + 1} of {PROMPTS.length}: {PROMPTS[currentPromptIndex].title}</p>
               </div>
               <div className="hidden md:flex items-center gap-4">
                 <button className="p-3 text-slate-400 hover:text-blue-600 bg-slate-50 hover:bg-blue-50 rounded-2xl transition-all">

@@ -1,18 +1,36 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useWebRTC } from '../hooks/useWebRTC';
+import { useOnboardData } from '../hooks/useOnboardData';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate, useParams } from 'react-router-dom';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 import { logEvent, TELEMETRY_EVENTS } from '../lib/telemetry';
 
-const { FiMic, FiMicOff, FiVideo, FiVideoOff, FiPhone, FiMessageSquare, FiUsers, FiSettings, FiMaximize, FiX, FiCheck, FiStar, FiCode, FiEdit3, FiTerminal, FiMonitor } = FiIcons;
+const { FiMic, FiMicOff, FiVideo, FiVideoOff, FiMonitor, FiPhone, FiSettings, FiCheck, FiMessageSquare, FiTerminal, FiEdit3, FiStar, FiX, FiSend, FiCode } = FiIcons;
 
 const InterviewRoom = () => {
   const navigate = useNavigate();
   const { id: interviewId } = useParams(); // assuming the URL is like /interview/:id
   const [activeTab, setActiveTab] = useState('video'); // 'video', 'code', 'notes'
   const [showFeedback, setShowFeedback] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatInput, setChatInput] = useState('');
+  const chatScrollRef = useRef(null);
+
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [messages, isChatOpen]);
+
+  const handleSendMessage = () => {
+    if (chatInput.trim() && sendMessage) {
+      sendMessage(chatInput);
+      setChatInput('');
+    }
+  };
+
   const [timer, setTimer] = useState(0);
   const [code, setCode] = useState('function findSum(arr) {\n  // Write your solution here\n  return arr.reduce((a, b) => a + b, 0);\n}');
 
@@ -26,7 +44,10 @@ const InterviewRoom = () => {
     toggleMute,
     toggleVideo,
     isScreenSharing,
-    toggleScreenShare
+    toggleScreenShare,
+    messages = [],
+    sendMessage,
+    peerConnected
   } = useWebRTC(interviewId || 'default-room');
 
   // Refs for video elements
@@ -269,6 +290,15 @@ const InterviewRoom = () => {
           >
             <SafeIcon icon={FiMonitor} />
           </button>
+          <button
+            onClick={() => setIsChatOpen(!isChatOpen)}
+            className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all relative ${isChatOpen ? 'bg-blue-500 text-white' : 'bg-white/10 hover:bg-white/20'}`}
+          >
+            <SafeIcon icon={FiMessageSquare} />
+            {messages.length > 0 && !isChatOpen && (
+              <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-ping" />
+            )}
+          </button>
         </div>
 
         <div className="flex items-center gap-4">
@@ -292,6 +322,65 @@ const InterviewRoom = () => {
           </button>
         </div>
       </div>
+
+
+      <AnimatePresence>
+        {isChatOpen && (
+          <motion.div
+            initial={{ opacity: 0, x: 300 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 300 }}
+            className="fixed top-24 bottom-24 right-0 w-80 bg-slate-900 border-l border-white/10 z-50 flex flex-col shadow-2xl"
+          >
+            <div className="p-4 border-b border-white/5 flex items-center justify-between">
+              <h3 className="font-bold text-white flex items-center gap-2">
+                <SafeIcon icon={FiMessageSquare} className="text-blue-500" /> In-Meeting Chat
+              </h3>
+              <button onClick={() => setIsChatOpen(false)} className="text-slate-400 hover:text-white transition-colors">
+                <SafeIcon icon={FiX} />
+              </button>
+            </div>
+
+            <div ref={chatScrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+              {messages.length === 0 ? (
+                <div className="text-center text-slate-500 text-xs mt-10">No messages yet.</div>
+              ) : (
+                messages.map((msg, idx) => (
+                  <div key={idx} className={`flex flex-col ${msg.isLocal ? 'items-end' : 'items-start'}`}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[10px] font-bold text-slate-400">{msg.sender}</span>
+                      <span className="text-[10px] text-slate-600">{msg.timestamp}</span>
+                    </div>
+                    <div className={`px-4 py-2 rounded-2xl text-sm max-w-[85%] ${msg.isLocal ? 'bg-blue-600 text-white rounded-br-none' : 'bg-white/10 text-slate-200 rounded-bl-none'}`}>
+                      {msg.text}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="p-4 border-t border-white/5 bg-slate-900/90 backdrop-blur">
+              <div className="relative flex items-center">
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                  placeholder="Type a message..."
+                  className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-4 pr-12 text-sm text-white placeholder-slate-500 outline-none focus:border-blue-500 transition-colors"
+                />
+                <button
+                  onClick={handleSendMessage}
+                  disabled={!chatInput.trim()}
+                  className="absolute right-2 p-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg transition-colors flex items-center justify-center"
+                >
+                  <SafeIcon icon={FiSend} className="text-sm" />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Evaluation Modal */}
       <AnimatePresence>

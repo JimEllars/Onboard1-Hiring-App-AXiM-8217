@@ -49,10 +49,15 @@ export function useWebRTC(roomId) {
           ws.send(JSON.stringify({ type: 'answer', sdp: answer }));
         } else if (message.type === 'answer') {
           await pc.setRemoteDescription(new RTCSessionDescription(message.sdp));
+
         } else if (message.type === 'ice-candidate') {
           await pc.addIceCandidate(new RTCIceCandidate(message.candidate));
+        } else if (message.type === 'chat-message') {
+          // Fallback chat reception
+          setMessages(prev => [...prev, { ...message.message, isLocal: false }]);
         }
       } catch (err) {
+
         console.error('Error handling signaling message:', err);
       }
     };
@@ -74,6 +79,67 @@ export function useWebRTC(roomId) {
   }, [roomId, connectSignaling]);
 
   // Track states for UI
+
+  // Chat state
+  const [messages, setMessages] = useState([]);
+  const [peerConnected, setPeerConnected] = useState(false);
+  const dataChannelRef = useRef(null);
+
+  const setupDataChannel = (channel) => {
+    channel.onopen = () => {
+      setPeerConnected(true);
+      logEvent(TELEMETRY_EVENTS.MEDIA_STREAM_EVENT, { action: 'datachannel_connected', roomId });
+    };
+    channel.onclose = () => {
+      setPeerConnected(false);
+    };
+    channel.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        setMessages(prev => [...prev, { ...msg, isLocal: false }]);
+      } catch (e) {
+        console.error("Error parsing data channel message", e);
+      }
+    };
+  };
+
+  const sendMessage = useCallback((text) => {
+    if (!text.trim()) return;
+
+    const newMsg = {
+      id: Date.now().toString(),
+      sender: 'You',
+      text,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      isLocal: true
+    };
+
+    setMessages(prev => [...prev, newMsg]);
+
+    if (dataChannelRef.current && dataChannelRef.current.readyState === 'open') {
+      dataChannelRef.current.send(JSON.stringify({
+         id: newMsg.id,
+         sender: 'Candidate / Interviewer', // remote sees it as this
+         text: newMsg.text,
+         timestamp: newMsg.timestamp
+      }));
+    } else {
+      // Fallback to signaling socket if data channel isn't ready
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({
+          type: 'chat-message',
+          message: {
+            id: newMsg.id,
+            sender: 'Candidate / Interviewer',
+            text: newMsg.text,
+            timestamp: newMsg.timestamp
+          }
+        }));
+      }
+    }
+    logEvent('interview_chat_message_sent', { roomId, messageId: newMsg.id, textLength: text.length });
+  }, [roomId]);
+
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
@@ -114,6 +180,7 @@ export function useWebRTC(roomId) {
           setRemoteStream(event.streams[0]);
         };
 
+
         // Handle ICE candidates and send them to the signaling server
         pc.onicecandidate = (event) => {
           if (event.candidate && wsRef.current?.readyState === WebSocket.OPEN) {
@@ -123,6 +190,18 @@ export function useWebRTC(roomId) {
             }));
           }
         };
+
+        // Data channel creation (Offer side)
+        const channel = pc.createDataChannel('chat');
+        dataChannelRef.current = channel;
+        setupDataChannel(channel);
+
+        // Data channel reception (Answer side)
+        pc.ondatachannel = (event) => {
+          dataChannelRef.current = event.channel;
+          setupDataChannel(event.channel);
+        };
+
 
         // Handle connection state changes for telemetry
         pc.oniceconnectionstatechange = () => {
@@ -234,6 +313,9 @@ export function useWebRTC(roomId) {
     toggleMute,
     toggleVideo,
     isScreenSharing,
-    toggleScreenShare
+    toggleScreenShare,
+    messages,
+    sendMessage,
+    peerConnected
   };
 }

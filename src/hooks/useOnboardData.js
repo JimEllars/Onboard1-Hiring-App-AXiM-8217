@@ -22,9 +22,10 @@ const MOCK_INTERVIEWS = [
 
 const DEFAULT_BRANDING = {
   name: 'AXiM',
-  logoUrl: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&w=100&h=100&q=80',
+  logoUrl: '/favicon.svg',
   brandColor: '#2563eb',
-  headline: 'Join the AXiM Ecosystem'
+  headline: 'AXiM Internal Careers & Talent Portal',
+  subheadline: 'Accelerating autonomous human capital, internal operations, and growth teams across the AXiM ecosystem.'
 };
 
 export const useOnboardData = () => {

@@ -33,11 +33,17 @@ import AsyncVideoInterview from './pages/AsyncVideoInterview';
 import InterviewScheduling from './pages/InterviewScheduling';
 
 function App() {
+  // Support jobs.axim.us.com host detection: render the jobs board directly at root
+  const isJobsSubdomain = typeof window !== 'undefined' && (
+    window.location.hostname === 'jobs.axim.us.com' ||
+    window.location.hostname.startsWith('jobs.')
+  );
+
   return (
     <Router>
       <Routes>
         {/* Candidate Facing Routes */}
-        <Route path="/" element={<LandingPage />} />
+        <Route path="/" element={isJobsSubdomain ? <PublicJobBoard /> : <LandingPage />} />
         <Route path="/jobs" element={<PublicJobBoard />} />
         <Route path="/login" element={<Login />} />
         <Route path="/auth/callback" element={<AuthCallback />} />

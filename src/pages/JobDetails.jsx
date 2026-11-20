@@ -84,14 +84,15 @@ const JobDetails = () => {
               <>
             <button 
               onClick={() => {
-                const publicUrl = `${window.location.origin}/apply/${job.id}`;
+                const isProduction = typeof window !== 'undefined' && window.location.hostname.includes('axim.us.com');
+                const publicUrl = isProduction ? `https://jobs.axim.us.com/apply/${job.id}` : `${window.location.origin}/apply/${job.id}`;
                 navigator.clipboard?.writeText(publicUrl);
-                alert(`Public application link copied to clipboard:\n${publicUrl}`);
+                alert(`AXiM Job Application link copied:\n${publicUrl}`);
               }}
               title="Copy Public Apply Link"
               className="p-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors flex items-center gap-2 text-sm font-bold text-slate-700"
             >
-              <SafeIcon icon={FiShare2} className="text-slate-600" /> Share
+              <SafeIcon icon={FiShare2} className="text-slate-600" /> Share Link
             </button>
             <button 
               onClick={() => window.open(`/apply/${job.id}`, '_blank')}

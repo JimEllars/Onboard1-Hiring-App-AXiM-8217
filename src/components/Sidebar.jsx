@@ -26,9 +26,14 @@ const Sidebar = ({ isOpen, setIsOpen, userRole = "Admin" }) => {
     >
       <div className="h-16 flex items-center justify-between px-6 border-b border-slate-800">
         {isOpen && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-black text-xl">01</div>
-            <span className="text-xl font-bold tracking-tight">Onboard</span>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-700 via-indigo-600 to-cyan-500 flex items-center justify-center font-black text-white text-base shadow-sm">
+              A
+            </div>
+            <div className="flex flex-col">
+              <span className="text-base font-black tracking-tight text-white leading-none">AXiM <span className="text-blue-400 font-extrabold text-xs">Onboard1</span></span>
+              <span className="text-[8px] font-black tracking-widest uppercase text-slate-400 mt-0.5">Internal HCM</span>
+            </div>
           </motion.div>
         )}
         <button onClick={() => setIsOpen(!isOpen)} className="text-slate-400 hover:text-white transition-colors">

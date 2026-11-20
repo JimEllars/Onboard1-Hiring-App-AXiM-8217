@@ -188,16 +188,33 @@ const ApplicationForm = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center py-20 px-8">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center py-16 px-6 sm:px-8">
       <div className="w-full max-w-2xl">
-        <button 
-          onClick={() => navigate('/jobs')} 
-          className="flex items-center gap-2 text-slate-500 hover:text-slate-900 font-bold mb-8 transition-colors group"
-        >
-          <SafeIcon icon={FiArrowLeft} className="group-hover:-translate-x-1 transition-transform" /> Back to Jobs
-        </button>
+        <div className="flex items-center justify-between mb-8">
+          <button 
+            onClick={() => navigate('/jobs')} 
+            className="flex items-center gap-2 text-slate-500 hover:text-slate-900 font-bold transition-colors group text-sm"
+          >
+            <SafeIcon icon={FiArrowLeft} className="group-hover:-translate-x-1 transition-transform" /> Back to AXiM Jobs
+          </button>
+          <div className="text-xs font-bold text-slate-400 bg-white border border-slate-200 px-3 py-1.5 rounded-full shadow-sm">
+            jobs.axim.us.com
+          </div>
+        </div>
 
         <div className="bg-white rounded-[40px] shadow-2xl shadow-slate-200 border border-slate-100 overflow-hidden relative">
+          <div className="px-10 pt-10 pb-0 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+            <div className="flex items-center gap-2 pb-6">
+              <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-black text-white text-sm shadow-sm">
+                A
+              </div>
+              <span className="font-black text-slate-900 tracking-tight text-lg">AXiM <span className="text-blue-600 font-bold text-sm">Intake</span></span>
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-wider text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-100 mb-6">
+              Internal Applicant Pipeline
+            </span>
+          </div>
+
           <AnimatePresence mode="wait">
             {!isSubmitted ? (
               <motion.div 
@@ -211,7 +228,7 @@ const ApplicationForm = () => {
                   <div className="flex justify-between items-end mb-4">
                     <div>
                       <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
-                        {targetJob.dept}
+                        {targetJob.dept} • AXiM Ecosystem
                       </span>
                       <h2 className="text-3xl font-black text-slate-900 tracking-tight mt-2">
                         Applying for {targetJob.title}

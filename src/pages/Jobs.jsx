@@ -234,7 +234,8 @@ const Jobs = () => {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    const url = `${window.location.origin}/jobs?ref=EMP123`;
+                    const isProduction = typeof window !== 'undefined' && window.location.hostname.includes('axim.us.com');
+                    const url = isProduction ? `https://jobs.axim.us.com?ref=EMP123` : `${window.location.origin}/jobs?ref=EMP123`;
                     navigator.clipboard.writeText(url);
                     const btn = e.currentTarget;
                     const originalHTML = btn.innerHTML;

@@ -23,9 +23,16 @@ const LandingPage = () => {
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
       {/* Navigation */}
       <nav className="h-20 px-8 flex items-center justify-between max-w-7xl mx-auto w-full absolute top-0 left-0 right-0 z-50">
-        <div className="flex items-center gap-2">
-          <img src={branding?.logoUrl} alt="Logo" className="w-10 h-10 rounded-xl object-cover" />
-          <span className="text-2xl font-black tracking-tight text-slate-900" style={{ color: branding?.brandColor }}>{branding?.name || 'Onboard'}</span>
+        <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/jobs')}>
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-700 via-indigo-600 to-cyan-500 flex items-center justify-center shadow-md">
+            <svg viewBox="0 0 32 32" fill="none" className="w-5 h-5 text-white">
+              <path d="M16 4L5 24H10.5L16 13.5L21.5 24H27L16 4Z" fill="currentColor" />
+              <path d="M16 17L12 24H20L16 17Z" fill="#38bdf8" />
+            </svg>
+          </div>
+          <span className="text-2xl font-black tracking-tight text-slate-900">
+            AXiM <span className="text-blue-600 text-lg font-bold">Onboard1</span>
+          </span>
         </div>
         <div className="flex items-center gap-6">
           <button
@@ -107,11 +114,13 @@ const LandingPage = () => {
       {/* Footer */}
       <footer className="bg-slate-900 text-white py-12 px-8">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center gap-2">
-            <img src={branding?.logoUrl} alt="Logo" className="w-8 h-8 rounded-lg object-cover" />
-            <span className="text-xl font-bold tracking-tight" style={{ color: branding?.brandColor }}>{branding?.name || 'Onboard'}</span>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-black text-white text-sm">
+              A
+            </div>
+            <span className="text-xl font-bold tracking-tight text-white">AXiM Onboard1</span>
           </div>
-          <p className="text-slate-400 font-medium text-sm">© {new Date().getFullYear()} Onboard AXiM. All rights reserved.</p>
+          <p className="text-slate-400 font-medium text-sm">© {new Date().getFullYear()} AXiM Corporation. All rights reserved. Internal HCM Engine.</p>
         </div>
       </footer>
     </div>

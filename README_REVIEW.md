@@ -49,3 +49,18 @@ Successfully implemented dynamic workflow step building and organizational quota
 - **Multi-Prompt Video Assessment Pipeline**: Enhanced `src/pages/AsyncVideoInterview.jsx` to dynamically load `candidateId` and `token` from URL parameters. Integrated an interactive 5-question carousel prompting candidates through Introduction, Technical Background, Problem Solving, Collaboration, and Career Goals, allowing recording and reviewing per prompt.
 - **Video Submission Handling**: Upgraded `functions/api/submit-video.js` to persist the final `video_url` and update candidate records dynamically to the "Video Assessment" stage. Added telemetry hooks to capture `trackVideoUploaded` upon completion.
 - **Candidate Progress Portal Resolver**: Remapped `src/pages/CandidateProgress.jsx` to correctly resolve candidate state out of the 8 canonical stages ('Applied', 'Fit Survey', 'Video Assessment', 'Live Interview', 'Screening/Checkr', 'Offer / E-Sign', 'Hired', 'Archived / Closed'). Designed dynamic CTA buttons that deep-link strictly to next incomplete workflows. Implemented robust `candidate_portal_viewed` tracking.
+
+### AXiM Internal Jobs Portal Activation (`jobs.axim.us.com` & `axim.us.com/jobs`)
+- **Dedicated Subdomain & Path Routing**: Configured client-side host evaluation in `src/App.jsx` such that visits to `jobs.axim.us.com` render the `PublicJobBoard` directly at `/`, while `axim.us.com/jobs` remains available and linked across the application.
+- **AXiM Brand Architecture**:
+  - Engineered `src/components/AximLogo.jsx` with scalable SVG vector graphics, gradient styling, and career subtitles.
+  - Added `public/favicon.svg` and updated `index.html` with production meta tags and titles tailored for AXiM Internal Careers.
+  - Replaced legacy placeholders across `src/components/Sidebar.jsx` and `src/pages/LandingPage.jsx`.
+- **Internal Pilot Notice & Guidance**:
+  - Integrated an ecosystem top-bar banner across the job board denoting the internal pilot testing phase.
+  - Added an internal operations guide informing team members of the workflow iteration (fit surveys, async video interviews, Checkr screening, and digital offer letters) prior to commercial external licensing.
+- **Recruiter Share Actions**:
+  - Updated link-sharing buttons in `src/pages/Jobs.jsx` and `src/pages/JobDetails.jsx` to generate and copy production `jobs.axim.us.com` URLs with referral parameters.
+- **Candidate Application Intake**:
+  - Branded `src/pages/ApplicationForm.jsx` with AXiM intake emblems, departmental metadata, and direct return navigation to the internal jobs board.
+

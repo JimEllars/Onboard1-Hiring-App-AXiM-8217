@@ -50,8 +50,8 @@ const Dashboard = () => {
           <p className="text-slate-500 mt-1 font-medium">Here's what's happening with your recruitment pipeline today.</p>
         </div>
         <div className="flex gap-3">
-          <button className="px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">Download Report</button>
-          <button className="px-5 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-colors shadow-lg shadow-slate-200">Manage Team</button>
+          <button onClick={() => navigate('/portal/reports')} className="px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">View Reports</button>
+          <button onClick={() => navigate('/portal/settings/team')} className="px-5 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-colors shadow-lg shadow-slate-200">Manage Team</button>
         </div>
       </div>
 
@@ -101,7 +101,7 @@ const Dashboard = () => {
                 key={stage}
                 onClick={() => {
                   logEvent('dashboard_pipeline_pulse_clicked', { stage });
-                  navigate(`/candidates?stage=${encodeURIComponent(stage)}`);
+                  navigate(`/portal/candidates?stage=${encodeURIComponent(stage)}`);
                 }}
                 className="min-w-[140px] bg-white rounded-2xl p-4 shadow-sm border border-slate-100 cursor-pointer hover:border-blue-500 hover:shadow-md transition-all flex flex-col items-center justify-center gap-2 group"
               >
@@ -153,7 +153,7 @@ const Dashboard = () => {
               </div>
             ))}
           </div>
-          <button className="w-full mt-10 flex items-center justify-center gap-2 py-4 rounded-2xl bg-slate-50 text-slate-900 font-black hover:bg-blue-600 hover:text-white transition-all text-xs uppercase tracking-widest">
+          <button onClick={() => navigate('/portal/analytics')} className="w-full mt-10 flex items-center justify-center gap-2 py-4 rounded-2xl bg-slate-50 text-slate-900 font-black hover:bg-blue-600 hover:text-white transition-all text-xs uppercase tracking-widest">
             Detailed Analytics <SafeIcon icon={FiArrowRight} />
           </button>
         </motion.div>

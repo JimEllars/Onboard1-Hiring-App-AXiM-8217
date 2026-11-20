@@ -17,21 +17,27 @@ export function getCorsHeaders(origin) {
   if (origin) {
     try {
       const originUrl = new URL(origin);
+      const host = originUrl.hostname.toLowerCase();
       if (
-        originUrl.hostname === "localhost" ||
-        originUrl.hostname === "127.0.0.1" ||
-        originUrl.hostname.endsWith(".pages.dev")
+        host === "localhost" ||
+        host === "127.0.0.1" ||
+        host.endsWith(".pages.dev") ||
+        host === "axim.us.com" ||
+        host.endsWith(".axim.us.com") ||
+        host === "axim.com" ||
+        host.endsWith(".axim.com")
       ) {
         allowedOrigin = origin;
       }
     } catch (e) {
-      // Ignore
+      // Ignore URL parsing errors
     }
   }
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-AXiM-Service-Key",
+    "Access-Control-Allow-Credentials": "true",
     "Content-Type": "application/json"
   };
 }

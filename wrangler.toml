@@ -1,0 +1,9 @@
+name = "axim-onboard1"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = "dist"
+
+[vars]
+AXIM_CORE_API_URL = "https://mock.axim.us.com"
+NEXUS_CRM_API_URL = "https://mock.nexus.com"
+EMAIL_FROM = "AXiM Hiring <hiring@axim.us.com>"

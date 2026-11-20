@@ -85,22 +85,35 @@ const CandidateDetails = ({ candidate, onClose, onEvaluate, onViewScores, onView
 
           <section>
             <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-              <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full" /> Documents
+              <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full" /> Candidate Documents
             </h4>
-            <div className="p-5 border border-slate-100 rounded-2xl hover:border-blue-500 transition-all cursor-pointer group bg-slate-50/50">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-red-500">
-                    <SafeIcon icon={FiFile} className="text-xl" />
+            {candidate.resume_url ? (
+              <div 
+                onClick={() => window.open(candidate.resume_url, '_blank')}
+                className="p-5 border border-slate-100 rounded-2xl hover:border-blue-500 transition-all cursor-pointer group bg-slate-50/50"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-blue-600">
+                      <SafeIcon icon={FiFile} className="text-xl" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-black text-slate-900 group-hover:text-blue-600 transition-colors">
+                        {candidate.resume_name || 'Candidate_Resume.pdf'}
+                      </p>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase">
+                        Submitted Resume • Click to view
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-black text-slate-900">Resume_Final_2023.pdf</p>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase">Oct 24, 2023 • 1.2MB</p>
-                  </div>
+                  <SafeIcon icon={FiDownload} className="text-slate-400 group-hover:text-blue-600 transition-colors" />
                 </div>
-                <SafeIcon icon={FiDownload} className="text-slate-400 group-hover:text-blue-600 transition-colors" />
               </div>
-            </div>
+            ) : (
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 text-xs text-slate-400 font-medium">
+                No resume file attached to this application.
+              </div>
+            )}
           </section>
         </div>
 

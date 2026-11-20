@@ -57,7 +57,7 @@ const JobDetails = () => {
   return (
     <div className="space-y-6 pb-12">
       <button 
-        onClick={() => navigate('/jobs')}
+        onClick={() => navigate('/portal/jobs')}
         className="flex items-center gap-2 text-slate-500 hover:text-slate-900 font-bold transition-colors"
       >
         <SafeIcon icon={FiArrowLeft} /> Back to Jobs
@@ -82,11 +82,23 @@ const JobDetails = () => {
           <div className="flex gap-3">
             {userRole === "Admin" && (
               <>
-            <button className="p-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
-              <SafeIcon icon={FiShare2} className="text-slate-600" />
+            <button 
+              onClick={() => {
+                const publicUrl = `${window.location.origin}/apply/${job.id}`;
+                navigator.clipboard?.writeText(publicUrl);
+                alert(`Public application link copied to clipboard:\n${publicUrl}`);
+              }}
+              title="Copy Public Apply Link"
+              className="p-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors flex items-center gap-2 text-sm font-bold text-slate-700"
+            >
+              <SafeIcon icon={FiShare2} className="text-slate-600" /> Share
             </button>
-            <button className="p-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
-              <SafeIcon icon={FiEdit3} className="text-slate-600" />
+            <button 
+              onClick={() => window.open(`/apply/${job.id}`, '_blank')}
+              className="p-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors text-sm font-bold text-slate-700"
+              title="Preview Public Form"
+            >
+              Preview Form
             </button>
             <button onClick={handleToggleStatus} className="px-6 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-all">
               {job?.status === 'Active' ? 'Pause Listing' : 'Activate Listing'}

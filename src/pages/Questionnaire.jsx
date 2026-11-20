@@ -175,15 +175,23 @@ const Questionnaire = () => {
                   <SafeIcon icon={FiCheckCircle} className="text-5xl" />
                 </div>
                 <h2 className="text-4xl font-black text-slate-900 mb-4 tracking-tight">Questionnaire Submitted!</h2>
-                <p className="text-lg text-slate-500 font-medium mb-10 leading-relaxed">
-                  Thank you for taking the time to provide your answers. We will review your application and get back to you shortly.
+                <p className="text-lg text-slate-500 font-medium mb-8 leading-relaxed">
+                  Thank you for taking the time to provide your answers. You are ready to proceed with the video assessment.
                 </p>
-                <button
-                  onClick={() => navigate('/')}
-                  className="px-8 py-4 bg-slate-100 text-slate-900 rounded-xl font-bold hover:bg-slate-200 transition-colors"
-                >
-                  Return to Job Board
-                </button>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <button
+                    onClick={() => navigate(`/apply/video-assessment?candidateId=${candidateId}&token=${token}`)}
+                    className="px-8 py-4 bg-blue-600 text-white rounded-xl font-black text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 flex items-center justify-center gap-2"
+                  >
+                    Continue to Video Assessment <SafeIcon icon={FiArrowRight} />
+                  </button>
+                  <button
+                    onClick={() => navigate('/jobs')}
+                    className="px-8 py-4 bg-slate-100 text-slate-900 rounded-xl font-bold hover:bg-slate-200 transition-colors"
+                  >
+                    Return to Job Board
+                  </button>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>

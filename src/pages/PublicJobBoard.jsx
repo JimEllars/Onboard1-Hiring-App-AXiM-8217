@@ -54,7 +54,7 @@ const PublicJobBoard = () => {
       <nav className="h-20 border-b border-slate-100 px-8 flex items-center justify-between max-w-7xl mx-auto w-full sticky top-0 bg-white/80 backdrop-blur-md z-50">
         <div className="flex items-center gap-2">
           <img src={branding?.logoUrl} alt="Logo" className="w-10 h-10 rounded-xl object-cover" />
-          <span className="text-2xl font-black tracking-tight text-slate-900" style={{ color: branding?.brandColor }}>{branding?.name || 'Onboard'}</span>
+          <span className="text-2xl font-black tracking-tight text-slate-900" style={{ color: branding?.brandColor }}>{branding?.name || 'AXiM'}</span>
         </div>
         <div className="hidden md:flex items-center gap-8">
           <a href="#" className="text-sm font-bold text-slate-500 hover:text-blue-600 transition-colors">Our Culture</a>
@@ -176,7 +176,7 @@ const PublicJobBoard = () => {
           <div className="max-w-sm">
             <div className="flex items-center gap-2 mb-6">
               <img src={branding?.logoUrl} alt="Logo" className="w-8 h-8 rounded-lg object-cover" />
-            <span className="text-xl font-bold tracking-tight" style={{ color: branding?.brandColor }}>{branding?.name || 'Onboard'}</span>
+            <span className="text-xl font-bold tracking-tight" style={{ color: branding?.brandColor }}>{branding?.name || 'AXiM'}</span>
             </div>
             <p className="text-slate-400 font-medium leading-relaxed">
               We're on a mission to make hiring and onboarding as smooth as a single click.

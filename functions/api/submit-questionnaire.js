@@ -57,6 +57,15 @@ export async function onRequestPost({ request, env }) {
       return errorResponse("Failed to save questionnaire data", "DB_ERROR", 500, headers);
     }
 
+    // Advance candidate to Video Assessment stage
+    await supabase
+      .from('onboard1_candidates')
+      .update({
+        stage: 'Video Assessment',
+        status: 'questionnaire_completed'
+      })
+      .eq('id', payload.candidateId);
+
     if (env.TEMPORAL_REST_ENDPOINT) {
        try {
          await fetch(env.TEMPORAL_REST_ENDPOINT, {

@@ -32,7 +32,7 @@ const OnboardingWorkflows = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <button 
-            onClick={() => navigate('/onboarding')}
+            onClick={() => navigate('/portal/onboarding')}
             className="flex items-center gap-2 text-slate-500 hover:text-slate-900 font-bold mb-2 transition-colors group"
           >
             <SafeIcon icon={FiArrowLeft} className="group-hover:-translate-x-1 transition-transform" /> 

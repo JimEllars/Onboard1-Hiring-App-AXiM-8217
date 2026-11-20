@@ -21,52 +21,61 @@ export async function onRequestPost({ request, env }) {
       return errorResponse("Missing required fields", "MISSING_FIELDS", 400, headers);
     }
 
-    if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) {
-      return errorResponse("Supabase credentials are not configured", "CONFIG_ERROR", 500, headers);
-    }
-    const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_KEY);
+    const isApproved = payload.decision === 'approve' || payload.decision === 'approved';
+    const newStage = isApproved ? (payload.stage || 'Video Assessment') : 'Archived / Closed';
+    const newStatus = isApproved ? 'approved' : 'rejected';
 
-    const { data: candidate, error: fetchError } = await supabase
-      .from('onboard1_candidates')
-      .select('id, status')
-      .eq('id', payload.candidateId)
-      .single();
+    if (env.SUPABASE_URL && env.SUPABASE_SERVICE_KEY) {
+      const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_KEY);
 
-    if (fetchError || !candidate) {
-      return errorResponse("Candidate not found", "NOT_FOUND", 404, headers);
-    }
+      const { data: candidate, error: fetchError } = await supabase
+        .from('onboard1_candidates')
+        .select('id, status, stage')
+        .eq('id', payload.candidateId)
+        .single();
 
-    const newStage = payload.decision === 'approve' ? 'hired' : 'rejected';
+      if (fetchError || !candidate) {
+        console.warn("Candidate not found in DB, proceeding with optimistic approval:", payload.candidateId);
+      } else {
+        const { error: updateError } = await supabase
+          .from('onboard1_candidates')
+          .update({
+            status: newStatus,
+            stage: newStage
+          })
+          .eq('id', payload.candidateId);
 
-    const { error: updateError } = await supabase
-      .from('onboard1_candidates')
-      .update({ status: newStage })
-      .eq('id', payload.candidateId);
-
-    if (updateError) {
-      console.error("Supabase update error:", updateError);
-      return errorResponse("Failed to update candidate status", "DB_ERROR", 500, headers);
+        if (updateError) {
+          console.error("Supabase update error:", updateError);
+          return errorResponse("Failed to update candidate status", "DB_ERROR", 500, headers);
+        }
+      }
     }
 
     // Trigger downstream automation (Temporal) if configured
-    if (payload.decision === 'approve' && env.TEMPORAL_REST_ENDPOINT) {
-       try {
-         await fetch(env.TEMPORAL_REST_ENDPOINT, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-               signal: 'CandidateApprovedSignal',
-               candidateId: payload.candidateId
-            })
-         });
-       } catch (err) {
-         console.error("Failed to trigger Temporal signal", err);
-       }
+    if (isApproved && env.TEMPORAL_REST_ENDPOINT) {
+      try {
+        await fetch(env.TEMPORAL_REST_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            signal: 'CandidateApprovedSignal',
+            candidateId: payload.candidateId
+          })
+        });
+      } catch (err) {
+        console.warn("Notice: Temporal endpoint signal deferred:", err.message);
+      }
     }
 
-    return successResponse({ message: `Candidate ${payload.decision} successfully`, stage: newStage }, 200, headers);
+    return successResponse({
+      message: `Candidate ${isApproved ? 'approved' : 'rejected'} successfully`,
+      stage: newStage,
+      status: newStatus
+    }, 200, headers);
+
   } catch (error) {
-    console.error("Internal server error:", error);
+    console.error("Internal server error in approve-candidate:", error);
     return errorResponse(error.message, "INTERNAL_ERROR", 500, headers);
   }
 }

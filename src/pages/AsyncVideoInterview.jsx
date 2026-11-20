@@ -208,7 +208,7 @@ const AsyncVideoInterview = () => {
 
       // Wait for a few seconds to show the success message, then navigate to next step
       setTimeout(() => {
-        navigate('/apply/schedule');
+        navigate(`/apply/schedule?candidateId=${candidateId}&token=${token || ''}`);
       }, 3000);
     } catch (error) {
       console.error('Submission error:', error);

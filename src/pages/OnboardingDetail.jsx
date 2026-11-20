@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import * as FiIcons from 'react-icons/fi';
 import { logEvent } from '../lib/telemetry';
 import SafeIcon from '../common/SafeIcon';
+import { useOnboardData } from '../hooks/useOnboardData';
 
 const { FiArrowLeft, FiCheckCircle, FiFileText, FiShield, FiCpu, FiMessageSquare, FiClock, FiAlertCircle, FiSettings, FiExternalLink, FiUploadCloud } = FiIcons;
 
@@ -14,7 +15,7 @@ const mockCandidate = {
   type: 'W-2',
   status: 'Offer Accepted',
   progress: 25,
-  startDate: '2023-11-15',
+  startDate: '2026-12-01',
   email: 'elena.r@example.com',
   manager: 'David Chen',
 };
@@ -22,19 +23,33 @@ const mockCandidate = {
 const OnboardingDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { candidates } = useOnboardData();
+
+  const targetCandidate = candidates.find(c => String(c.id) === String(id));
+  const candidate = targetCandidate ? {
+    id: targetCandidate.id,
+    name: targetCandidate.name || 'Candidate',
+    role: targetCandidate.role || 'New Hire',
+    type: 'W-2',
+    status: targetCandidate.stage || 'Offer Accepted',
+    progress: 40,
+    startDate: 'Upcoming',
+    email: targetCandidate.email || 'candidate@axim.us.com',
+    manager: 'Talent Lead'
+  } : mockCandidate;
+
   const [activeTab, setActiveTab] = useState('tasks');
   const [showGenerateOffer, setShowGenerateOffer] = useState(false);
-  const [offerType, setOfferType] = useState(mockCandidate.type || 'W-2');
+  const [offerType, setOfferType] = useState(candidate.type || 'W-2');
   const [generatedLink, setGeneratedLink] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [pushStatus, setPushStatus] = useState('idle'); // idle, packaging, syncing, success, retry
   const [pushError, setPushError] = useState(null);
 
-
   const handlePushToOperations = async () => {
     setPushStatus('packaging');
     setPushError(null);
-    logEvent('handoff_attempt_started', { candidateId: id || mockCandidate.id });
+    logEvent('handoff_attempt_started', { candidateId: candidate.id });
 
     // Simulate slight delay for "Packaging Dossier"
     await new Promise(resolve => setTimeout(resolve, 800));
@@ -48,7 +63,7 @@ const OnboardingDetail = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          candidateId: id || mockCandidate.id
+          candidateId: candidate.id
         }),
       });
 
@@ -100,19 +115,19 @@ const OnboardingDetail = () => {
       <div className="flex justify-between items-end">
         <div>
           <button
-            onClick={() => navigate('/onboarding')}
+            onClick={() => navigate('/portal/onboarding')}
             className="flex items-center gap-2 text-slate-500 hover:text-slate-900 font-bold mb-4 transition-colors group"
           >
             <SafeIcon icon={FiArrowLeft} className="group-hover:-translate-x-1 transition-transform" />
             Back to Pipeline
           </button>
           <div className="flex items-center gap-4">
-            <h2 className="text-4xl font-black text-slate-900 tracking-tight">{mockCandidate.name}</h2>
+            <h2 className="text-4xl font-black text-slate-900 tracking-tight">{candidate.name}</h2>
             <span className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-xl text-xs font-black uppercase tracking-widest border border-blue-100">
-              {mockCandidate.status}
+              {candidate.status}
             </span>
           </div>
-          <p className="text-slate-500 font-medium text-lg mt-2">{mockCandidate.role} • Starts {mockCandidate.startDate}</p>
+          <p className="text-slate-500 font-medium text-lg mt-2">{candidate.role} • Starts {candidate.startDate}</p>
         </div>
 
         <div className="flex gap-3">

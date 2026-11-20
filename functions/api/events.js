@@ -25,21 +25,15 @@ export async function onRequest(context) {
       const initialEvent = { type: 'connected', timestamp: Date.now() };
       controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify(initialEvent)}\n\n`));
 
-      // Mock emitting occasional events for demonstration, normally this would connect to a DB or Pub/Sub
+      // Keep-alive heartbeat ping every 25 seconds
       const interval = setInterval(() => {
         try {
-          const events = [
-            { type: 'toast', title: 'New Application Received', desc: 'Sarah Miller applied for Senior Designer', link: '/portal/candidates' },
-            { type: 'toast', title: 'Video Assessment Submitted', desc: 'James Wilson completed their video task', link: '/portal/candidates' },
-            { type: 'toast', title: 'Agreement Signed', desc: 'Eleanor Pena signed the offer letter', link: '/portal/onboarding' },
-            { type: 'ping', timestamp: Date.now() }
-          ];
-          const randomEvent = events[Math.floor(Math.random() * events.length)];
-          controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify(randomEvent)}\n\n`));
+          const pingEvent = { type: 'ping', timestamp: Date.now() };
+          controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify(pingEvent)}\n\n`));
         } catch (err) {
           clearInterval(interval);
         }
-      }, 5000); // Send event every 5 seconds for demonstration
+      }, 25000);
 
       // Clean up when the client disconnects
       request.signal.addEventListener('abort', () => {

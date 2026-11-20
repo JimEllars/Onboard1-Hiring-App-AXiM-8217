@@ -200,8 +200,7 @@ const JobOffer = () => {
             Download / Print Signed Agreement
           </button>
           <button
-            onClick={() => window.location.href = 'https://agentview.axim.com'}
-
+            onClick={() => window.location.href = 'https://agentview.axim.us.com'}
             className="inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 transition-colors w-full mb-3"
           >
             Access AgentView Portal

@@ -7,14 +7,28 @@ import SafeIcon from '../common/SafeIcon';
 import { supabase } from '../lib/supabaseClient';
 import { useOnboardData } from '../hooks/useOnboardData';
 
-const { FiStar, FiMessageSquare, FiCheck, FiX, FiArrowLeft, FiAlertCircle, FiClock, FiShield, FiVideo, FiPlay } = FiIcons;
+const { FiStar, FiMessageSquare, FiCheck, FiX, FiArrowLeft, FiAlertCircle, FiClock, FiShield, FiVideo, FiPlay, FiFileText, FiDownload, FiExternalLink } = FiIcons;
 
 const CandidateEvaluation = () => {
   const { id } = useParams();
   const userRole = "Hiring Manager";
   const navigate = useNavigate();
-  const { updateCandidateStage } = useOnboardData();
+  const { candidates, updateCandidateStage } = useOnboardData();
   const [activeTab, setActiveTab] = useState('evaluation');
+
+  const targetCandidate = candidates.find(c => String(c.id) === String(id));
+  const candidate = targetCandidate || {
+    id: id || 'mock-id',
+    name: 'Eleanor Pena',
+    role: 'Senior Full Stack Engineer (AXiM Ecosystem)',
+    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
+    video_url: 'https://www.w3schools.com/html/mov_bbb.mp4',
+    resume_name: 'Eleanor_Pena_Resume.pdf',
+    resume_url: 'https://cdn.axim.us.com/resumes/sample-eleanor.pdf',
+    email: 'eleanor.pena@example.com',
+    phone: '+1 (555) 012-3456'
+  };
+
   const [ratings, setRatings] = useState({
     technical: 0,
     culture: 0,
@@ -178,7 +192,7 @@ const CandidateEvaluation = () => {
 
       logEvent(TELEMETRY_EVENTS.CANDIDATE_PIPELINE_EVENT, { action: 'Evaluation_Submission_Success', candidateId: payload.candidateId });
 
-      let nextStage = 'Interview';
+      let nextStage = 'Live Interview';
       if (recommendation === 'hire') nextStage = 'Offer / E-Sign';
       else if (recommendation === 'reject') nextStage = 'Archived / Closed';
       else if (recommendation === 'maybe') nextStage = 'Screening/Checkr';
@@ -188,7 +202,7 @@ const CandidateEvaluation = () => {
 
       setIsSuccess(true);
       setTimeout(() => {
-        navigate('/candidates');
+        navigate('/portal/candidates');
       }, 1500);
 
     } catch (error) {
@@ -198,7 +212,7 @@ const CandidateEvaluation = () => {
       // Fallback for missing backend environment
       setIsSuccess(true);
       setTimeout(() => {
-        navigate('/candidates');
+        navigate('/portal/candidates');
       }, 1500);
     } finally {
       setIsSubmitting(false);
@@ -260,7 +274,7 @@ const CandidateEvaluation = () => {
       </AnimatePresence>
 
       <button 
-        onClick={() => navigate('/candidates')}
+        onClick={() => navigate('/portal/candidates')}
         className="flex items-center gap-2 text-slate-500 hover:text-slate-900 font-bold transition-colors"
       >
         <SafeIcon icon={FiArrowLeft} /> Back to Candidates
@@ -275,18 +289,16 @@ const CandidateEvaluation = () => {
       <div className="bg-white rounded-3xl border border-slate-100 p-8 shadow-sm">
         <div className="flex items-center gap-6 mb-8 pb-8 border-b border-slate-50 justify-between">
           <div className="flex items-center gap-6">
-            <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" className="w-20 h-20 rounded-2xl object-cover" />
+            <img src={candidate.avatar} className="w-20 h-20 rounded-2xl object-cover shadow-sm border border-slate-100" alt={candidate.name} />
             <div>
-              <h2 className="text-2xl font-bold text-slate-900">Eleanor Pena</h2>
-              <p className="text-slate-500 font-medium">Interviewing for <span className="text-blue-600">Senior Frontend Engineer</span></p>
+              <h2 className="text-2xl font-bold text-slate-900">{candidate.name}</h2>
+              <p className="text-slate-500 font-medium">Interviewing for <span className="text-blue-600 font-bold">{candidate.role}</span></p>
             </div>
           </div>
           <div>
             {getBackgroundCheckUI()}
           </div>
         </div>
-
-        {/* AI Assist Panel */}
 
         {/* Tabs */}
         <div className="flex border-b border-slate-200 mb-8">
@@ -302,6 +314,12 @@ const CandidateEvaluation = () => {
           >
             <SafeIcon icon={FiVideo} /> Video Assessment
           </button>
+          <button
+            onClick={() => setActiveTab('resume')}
+            className={`px-6 py-4 font-bold text-sm transition-colors border-b-2 flex items-center gap-2 ${activeTab === 'resume' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-900'}`}
+          >
+            <SafeIcon icon={FiFileText} /> Resume & Documents
+          </button>
         </div>
 
         {activeTab === 'video' ? (
@@ -310,15 +328,14 @@ const CandidateEvaluation = () => {
                <video
                   controls
                   className="absolute inset-0 w-full h-full object-cover"
-                  poster="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=800&q=80"
+                  poster={candidate.avatar}
                   onPlay={handleVideoPlay}
-                  src="https://www.w3schools.com/html/mov_bbb.mp4"
+                  src={candidate.video_url || "https://www.w3schools.com/html/mov_bbb.mp4"}
                >
                </video>
-               {/* Custom overlay/controls mock */}
                <div className="absolute top-4 right-4 bg-black/50 backdrop-blur px-3 py-1.5 rounded-full text-white text-xs font-bold flex items-center gap-2">
                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                 Response 1 of 5
+                 Recorded Candidate Submission
                </div>
             </div>
 
@@ -335,6 +352,40 @@ const CandidateEvaluation = () => {
                    Question {q}
                  </button>
                ))}
+            </div>
+          </div>
+        ) : activeTab === 'resume' ? (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="p-8 bg-slate-50 border border-slate-200 rounded-3xl">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center text-2xl">
+                    <SafeIcon icon={FiFileText} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-black text-slate-900">{candidate.resume_name || 'Candidate_Resume.pdf'}</h3>
+                    <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Submitted Application Document</p>
+                  </div>
+                </div>
+                {candidate.resume_url && (
+                  <button
+                    onClick={() => window.open(candidate.resume_url, '_blank')}
+                    className="flex items-center gap-2 bg-slate-900 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-600 transition-all shadow-md"
+                  >
+                    <SafeIcon icon={FiDownload} /> View / Download Resume
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div className="bg-white p-4 rounded-xl border border-slate-100">
+                  <p className="text-[10px] font-black uppercase text-slate-400">Email Address</p>
+                  <p className="font-bold text-slate-800 mt-0.5">{candidate.email}</p>
+                </div>
+                <div className="bg-white p-4 rounded-xl border border-slate-100">
+                  <p className="text-[10px] font-black uppercase text-slate-400">Phone Number</p>
+                  <p className="font-bold text-slate-800 mt-0.5">{candidate.phone || 'Not provided'}</p>
+                </div>
+              </div>
             </div>
           </div>
         ) : (

@@ -4,12 +4,14 @@ import { motion } from 'framer-motion';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 import ReactECharts from 'echarts-for-react';
+import { useOnboardData } from '../hooks/useOnboardData';
 
 const { FiArrowLeft, FiCheckCircle, FiXCircle, FiMessageSquare, FiUser, FiAward, FiTarget, FiTrendingUp, FiStar, FiCheck } = FiIcons;
 
 const CandidateScores = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { candidates } = useOnboardData();
 
   const [aiData, setAiData] = useState(null);
   const [aiLoading, setAiLoading] = useState(true);
@@ -38,10 +40,19 @@ const CandidateScores = () => {
     fetchAiData();
   }, [id]);
 
-  // Mock aggregated data
-  const candidate = {
+  const targetCandidate = candidates.find(c => String(c.id) === String(id));
+  const candidate = targetCandidate ? {
+    id: targetCandidate.id,
+    name: targetCandidate.name || 'Candidate',
+    role: targetCandidate.role || 'Applicant',
+    avatar: targetCandidate.avatar || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
+    overallScore: targetCandidate.rating || 4.2,
+    totalEvaluations: 3,
+    recommendation: targetCandidate.stage === 'Hired' ? 'Strong Hire' : 'Hire',
+  } : {
+    id: id || 'mock-id',
     name: 'Eleanor Pena',
-    role: 'Senior Frontend Engineer',
+    role: 'Senior Full Stack Engineer',
     avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
     overallScore: 4.2,
     totalEvaluations: 3,
@@ -109,14 +120,14 @@ const CandidateScores = () => {
     <div className="max-w-6xl mx-auto space-y-8 pb-12">
       <div className="flex items-center justify-between">
         <button 
-          onClick={() => navigate('/candidates')}
+          onClick={() => navigate('/portal/candidates')}
           className="flex items-center gap-2 text-slate-500 hover:text-slate-900 font-bold transition-colors"
         >
           <SafeIcon icon={FiArrowLeft} /> Back to Candidates
         </button>
         <div className="flex gap-3">
-          <button className="px-6 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-700 font-bold text-sm hover:bg-slate-50 transition-colors">Export Report</button>
-          <button className="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-100">Make Final Offer</button>
+          <button onClick={() => window.print()} className="px-6 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-700 font-bold text-sm hover:bg-slate-50 transition-colors">Export Report</button>
+          <button onClick={() => navigate(`/portal/onboarding/${candidate.id}`)} className="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-100">Make Final Offer</button>
         </div>
       </div>
 

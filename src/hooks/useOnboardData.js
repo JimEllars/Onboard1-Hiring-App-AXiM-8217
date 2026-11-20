@@ -2,29 +2,29 @@ import { useState, useCallback, useMemo, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
 const MOCK_JOBS = [
-  { id: 1, title: 'Senior Frontend Engineer', dept: 'Engineering', location: 'San Francisco, CA', type: 'Full-time', candidates: 45, status: 'Active', salary: '$140k - $180k' },
-  { id: 2, title: 'Product Marketing Manager', dept: 'Marketing', location: 'Remote', type: 'Full-time', candidates: 128, status: 'Active', salary: '$110k - $150k' },
-  { id: 3, title: 'UX/UI Designer', dept: 'Design', location: 'New York, NY', type: 'Contract', candidates: 89, status: 'Active', salary: '$80 - $120/hr' },
+  { id: '11111111-1111-1111-1111-111111111111', title: 'Senior Full Stack Engineer (AXiM Ecosystem)', dept: 'Engineering', location: 'Remote', type: 'Full-time', candidates: 45, status: 'Active', salary: '$140k - $185k' },
+  { id: '22222222-2222-2222-2222-222222222222', title: 'Technical Recruiter & Talent Partner', dept: 'People & Talent', location: 'Remote', type: 'Full-time', candidates: 128, status: 'Active', salary: '$95k - $130k' },
+  { id: '33333333-3333-3333-3333-333333333333', title: 'Product Marketing & Growth Manager', dept: 'Growth', location: 'San Francisco, CA', type: 'Full-time', candidates: 89, status: 'Active', salary: '$120k - $160k' },
 ];
 
 const MOCK_CANDIDATES = [
-  { id: 1, name: 'Eleanor Pena', role: 'UX/UI Designer', stage: 'Interview', rating: 4, applied: 'Oct 24, 2023', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80', email: 'eleanor.pena@example.com', phone: '+1 (555) 012-3456', referral_code: 'EMP101' },
-  { id: 2, name: 'Cody Fisher', role: 'Senior Frontend Engineer', stage: 'Screening', rating: 3, applied: 'Oct 23, 2023', avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80', email: 'cody.fisher@example.com', phone: '+1 (555) 987-6543' },
-  { id: 3, name: 'Esther Howard', role: 'Product Marketing Manager', stage: 'Offer', rating: 5, applied: 'Oct 20, 2023', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80', email: 'esther.howard@example.com', phone: '+1 (555) 123-4567' },
-  { id: 4, name: 'Cameron Williamson', role: 'Data Scientist', stage: 'Technical Task', rating: 4, applied: 'Oct 18, 2023', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80', email: 'cameron.w@example.com', phone: '+1 (555) 444-5555' },
+  { id: 'c1-eleanor', name: 'Eleanor Pena', role: 'Senior Full Stack Engineer (AXiM Ecosystem)', stage: 'Screening', rating: 4.5, applied: 'Oct 24, 2026', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80', email: 'eleanor.pena@example.com', phone: '+1 (555) 012-3456', referral_code: 'AXM101', resume_name: 'Eleanor_Pena_Resume.pdf', resume_url: 'https://cdn.axim.us.com/resumes/sample-eleanor.pdf', video_url: 'https://www.w3schools.com/html/mov_bbb.mp4' },
+  { id: 'c2-cody', name: 'Cody Fisher', role: 'Technical Recruiter & Talent Partner', stage: 'Video Assessment', rating: 3.8, applied: 'Oct 23, 2026', avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80', email: 'cody.fisher@example.com', phone: '+1 (555) 987-6543', resume_name: 'Cody_Fisher_CV.pdf', video_url: 'https://www.w3schools.com/html/mov_bbb.mp4' },
+  { id: 'c3-esther', name: 'Esther Howard', role: 'Product Marketing & Growth Manager', stage: 'Offer / E-Sign', rating: 5.0, applied: 'Oct 20, 2026', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80', email: 'esther.howard@example.com', phone: '+1 (555) 123-4567', resume_name: 'Esther_Howard_Resume.pdf' },
+  { id: 'c4-cameron', name: 'Cameron Williamson', role: 'Senior Full Stack Engineer (AXiM Ecosystem)', stage: 'Live Interview', rating: 4.2, applied: 'Oct 18, 2026', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80', email: 'cameron.w@example.com', phone: '+1 (555) 444-5555' },
 ];
 
 const MOCK_INTERVIEWS = [
-  { id: 1, candidate: 'Eleanor Pena', role: 'UX/UI Designer', type: 'Technical Interview', date: 'Today, 2:00 PM', duration: '45 min', status: 'Upcoming', link: '/room/1' },
-  { id: 2, candidate: 'Cody Fisher', role: 'Senior Frontend Engineer', type: 'Culture Fit', date: 'Today, 4:30 PM', duration: '30 min', status: 'Upcoming', link: '/room/2' },
-  { id: 3, candidate: 'Esther Howard', role: 'Product Marketing Manager', type: 'Final Round', date: 'Tomorrow, 10:00 AM', duration: '60 min', status: 'Scheduled', link: '/room/3' },
+  { id: 1, candidate: 'Eleanor Pena', role: 'Senior Full Stack Engineer (AXiM Ecosystem)', type: 'Technical Interview', date: 'Today, 2:00 PM', duration: '45 min', status: 'Upcoming', link: '/room/1' },
+  { id: 2, candidate: 'Cody Fisher', role: 'Technical Recruiter & Talent Partner', type: 'Culture Fit', date: 'Today, 4:30 PM', duration: '30 min', status: 'Upcoming', link: '/room/2' },
+  { id: 3, candidate: 'Cameron Williamson', role: 'Senior Full Stack Engineer (AXiM Ecosystem)', type: 'Final Round', date: 'Tomorrow, 10:00 AM', duration: '60 min', status: 'Scheduled', link: '/room/3' },
 ];
 
 const DEFAULT_BRANDING = {
-  name: 'Acme Corporation',
+  name: 'AXiM',
   logoUrl: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&w=100&h=100&q=80',
   brandColor: '#2563eb',
-  headline: 'Open Positions'
+  headline: 'Join the AXiM Ecosystem'
 };
 
 export const useOnboardData = () => {
@@ -42,82 +42,77 @@ export const useOnboardData = () => {
       return;
     }
 
-    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-    });
+    }).catch(() => {});
 
-    // Listen to session changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      // Clear data if logged out
-      if (!session) {
-        setJobs([]);
-        setCandidates([]);
-      }
     });
 
-    return () => subscription.unsubscribe();
+    return () => subscription?.unsubscribe();
+  }, []);
+
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    if (!supabase) {
+      setJobs(MOCK_JOBS);
+      setCandidates(MOCK_CANDIDATES);
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      // 1. Always fetch public jobs (candidates and recruiters both need this)
+      const jobsPromise = supabase
+        .from('onboard1_jobs')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      // 2. Fetch candidates if authenticated recruiter or preview mode
+      const candidatesPromise = supabase
+        .from('onboard1_candidates')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      const [jobsRes, candidatesRes] = await Promise.allSettled([jobsPromise, candidatesPromise]);
+
+      let loadedJobs = MOCK_JOBS;
+      if (jobsRes.status === 'fulfilled' && !jobsRes.value.error && jobsRes.value.data?.length > 0) {
+        loadedJobs = jobsRes.value.data;
+      }
+      setJobs(loadedJobs);
+
+      let loadedCandidates = MOCK_CANDIDATES;
+      if (candidatesRes.status === 'fulfilled' && !candidatesRes.value.error && candidatesRes.value.data?.length > 0) {
+        loadedCandidates = candidatesRes.value.data.map(c => ({
+          ...c,
+          id: c.id,
+          name: c.name || c.full_name || 'Candidate',
+          stage: c.stage || (c.status === 'hired' ? 'Hired' : c.status === 'rejected' ? 'Archived / Closed' : 'Screening'),
+          avatar: c.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.name || 'Candidate')}&background=random`,
+          applied: c.created_at ? new Date(c.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recently',
+          role: loadedJobs.find(j => String(j.id) === String(c.job_id))?.title || 'Applicant',
+          resume_url: c.resume_url || null,
+          resume_name: c.resume_name || (c.resume_url ? 'Resume.pdf' : null)
+        }));
+      }
+      setCandidates(loadedCandidates);
+
+    } catch (err) {
+      console.warn('Falling back to local data gracefully. Reason:', err.message);
+      setJobs(MOCK_JOBS);
+      setCandidates(MOCK_CANDIDATES);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      setError(null);
-
-      if (!supabase) {
-        setJobs(MOCK_JOBS);
-        setCandidates(MOCK_CANDIDATES);
-        setIsLoading(false);
-        return;
-      }
-
-      // If we are strictly waiting for a session and none exists, don't fetch data yet.
-      // (Unless you want to fetch public data - but for recruiters, wait for session).
-      if (!session) {
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        const fetchPromise = Promise.all([
-          supabase.from('onboard1_jobs').select('*'),
-          supabase.from('onboard1_candidates').select('*')
-        ]);
-
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Supabase fetch timeout')), 3000)
-        );
-
-        const [jobsRes, candidatesRes] = await Promise.race([
-          fetchPromise,
-          timeoutPromise
-        ]);
-
-        if (jobsRes.error) throw jobsRes.error;
-        if (candidatesRes.error) throw candidatesRes.error;
-
-        setJobs(jobsRes.data.length ? jobsRes.data : MOCK_JOBS);
-        const liveCandidates = candidatesRes.data.map(c => ({
-          ...c,
-          stage: c.stage || 'Screening', // Default to first queue if stage is missing
-          avatar: c.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(c.name || 'Candidate') + '&background=random',
-          applied: c.created_at ? new Date(c.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recently',
-          role: jobsRes.data.find(j => j.id === c.job_id)?.title || 'Applicant'
-        }));
-        setCandidates(liveCandidates.length ? liveCandidates : MOCK_CANDIDATES);
-      } catch (err) {
-        console.warn('Silently falling back to mock data. Reason:', err.message);
-        setJobs(MOCK_JOBS);
-        setCandidates(MOCK_CANDIDATES);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchData();
-  }, [session]);
-
+  }, [fetchData, session]);
 
   useEffect(() => {
     const handleStageUpdate = (e) => {
@@ -130,62 +125,94 @@ export const useOnboardData = () => {
     return () => window.removeEventListener('candidate-stage-updated', handleStageUpdate);
   }, []);
 
+  // Real Job Creation with Supabase Persistence
+  const addJob = useCallback(async (newJob) => {
+    const jobPayload = {
+      title: newJob.title || 'New Position',
+      dept: newJob.dept || 'Engineering',
+      location: newJob.location || 'Remote',
+      type: newJob.type || 'Full-time',
+      salary: newJob.salary || 'Competitive',
+      description: newJob.description || '',
+      status: 'Active',
+      candidates: 0,
+      created_at: new Date().toISOString()
+    };
 
-  useEffect(() => {
-    // Connect to SSE event stream
-    let eventSource;
-    try {
-      eventSource = new EventSource('/api/events');
+    if (supabase) {
+      try {
+        const { data, error: insertError } = await supabase
+          .from('onboard1_jobs')
+          .insert([jobPayload])
+          .select('*')
+          .single();
 
-      eventSource.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-
-          // Handle specific events
-          if (data.type === 'candidate_updated') {
-             // In a real app we'd update state here
-             console.log('Candidate updated event received:', data);
-          } else if (data.type === 'evaluation_submitted') {
-             console.log('Evaluation submitted event received:', data);
-          } else if (data.type === 'offer_signed') {
-             console.log('Offer signed event received:', data);
-          } else if (data.type === 'toast') {
-             // Dispatch a custom event to trigger toast in Topbar
-             window.dispatchEvent(new CustomEvent('new-notification', { detail: data }));
-          }
-        } catch (err) {
-          console.warn('Failed to parse SSE data', err);
+        if (!insertError && data) {
+          setJobs(prev => [data, ...prev]);
+          return data;
+        } else if (insertError) {
+          console.warn("Supabase job insert error, keeping in local state:", insertError.message);
         }
-      };
-
-      eventSource.onerror = (err) => {
-        console.warn('SSE disconnected, falling back to silent state', err);
-        eventSource.close();
-      };
-    } catch (err) {
-       console.warn('Failed to connect to SSE stream', err);
+      } catch (e) {
+        console.warn("Job creation error:", e);
+      }
     }
 
-    return () => {
-      if (eventSource) {
-        eventSource.close();
+    const localJob = { ...jobPayload, id: `job-${Date.now()}` };
+    setJobs(prev => [localJob, ...prev]);
+    return localJob;
+  }, []);
+
+  // Real Job Update with Supabase Persistence
+  const updateJob = useCallback(async (jobId, updates) => {
+    setJobs(prev => prev.map(j => (String(j.id) === String(jobId)) ? { ...j, ...updates } : j));
+
+    if (supabase) {
+      try {
+        const { error: updateError } = await supabase
+          .from('onboard1_jobs')
+          .update(updates)
+          .eq('id', jobId);
+
+        if (updateError) {
+          console.warn("Failed to persist job update to Supabase:", updateError.message);
+        }
+      } catch (e) {
+        console.warn("Job update error:", e);
       }
-    };
+    }
   }, []);
 
-  const addJob = useCallback((newJob) => {
-    setJobs(prev => [{ ...newJob, id: Date.now(), candidates: 0, status: 'Active' }, ...prev]);
-  }, []);
-
-  const updateJob = useCallback((jobId, updates) => {
-    setJobs(prev => prev.map(j => (j.id === jobId || String(j.id) === String(jobId)) ? { ...j, ...updates } : j));
-  }, []);
-
-
-  const updateCandidateStage = useCallback((candidateId, newStage) => {
+  // Real Candidate Stage Update with Supabase Persistence
+  const updateCandidateStage = useCallback(async (candidateId, newStage) => {
     setCandidates(prev => prev.map(c => 
-      c.id === candidateId ? { ...c, stage: newStage } : c
+      String(c.id) === String(candidateId) ? { ...c, stage: newStage } : c
     ));
+
+    if (supabase) {
+      try {
+        const statusMapping = {
+          'Applied': 'applied',
+          'Screening': 'screening',
+          'Fit Survey': 'survey_pending',
+          'Video Assessment': 'video_assessment',
+          'Live Interview': 'interview_scheduled',
+          'Screening/Checkr': 'background_check_pending',
+          'Offer / E-Sign': 'pending_signature',
+          'Hired': 'hired',
+          'Archived / Closed': 'rejected'
+        };
+
+        const status = statusMapping[newStage] || newStage.toLowerCase().replace(/[^a-z0-9]/g, '_');
+
+        await supabase
+          .from('onboard1_candidates')
+          .update({ stage: newStage, status })
+          .eq('id', candidateId);
+      } catch (err) {
+        console.warn("Error updating candidate stage in Supabase:", err);
+      }
+    }
   }, []);
 
   const scheduleInterview = useCallback((interview) => {
@@ -198,29 +225,29 @@ export const useOnboardData = () => {
 
   const logout = useCallback(async () => {
     if (supabase) {
-      await supabase.auth.signOut();
+      try {
+        await supabase.auth.signOut();
+      } catch (e) {
+        console.warn("SignOut error:", e);
+      }
     }
     setSession(null);
-    setJobs([]);
-    setCandidates([]);
   }, []);
 
   const stats = useMemo(() => ({
     totalCandidates: candidates.length,
     activeJobs: jobs.filter(j => j.status === 'Active').length,
     hiredThisMonth: candidates.filter(c => c.stage === 'Hired').length,
-    interviewsToday: 18 // Mock static for now
-  }), [candidates, jobs]);
-
+    interviewsToday: interviews.length
+  }), [candidates, jobs, interviews]);
 
   const approveCandidate = useCallback(async (candidateId, decision) => {
-    // Find candidate to revert if API fails
-    const candidateToUpdate = candidates.find(c => c.id === candidateId);
+    const candidateToUpdate = candidates.find(c => String(c.id) === String(candidateId));
     if (!candidateToUpdate) return;
     const oldStage = candidateToUpdate.stage;
 
-    // Optimistic update
-    const newStage = decision === 'approved' ? 'Video Assessment' : 'Rejected';
+    const isApproved = decision === 'approve' || decision === 'approved';
+    const newStage = isApproved ? 'Video Assessment' : 'Archived / Closed';
     updateCandidateStage(candidateId, newStage);
 
     try {
@@ -231,21 +258,38 @@ export const useOnboardData = () => {
         },
         body: JSON.stringify({
           candidateId,
-          decision,
+          decision: isApproved ? 'approved' : 'rejected',
+          stage: newStage,
           jobId: candidateToUpdate.job_id
         })
       });
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to approve candidate');
+        throw new Error(data.error?.message || 'Failed to approve candidate');
       }
     } catch (err) {
       console.error('Approval failed, reverting state:', err);
-      // Revert stage
       updateCandidateStage(candidateId, oldStage);
     }
   }, [candidates, updateCandidateStage]);
 
-  return { jobs, candidates, interviews, branding, addJob, updateJob, updateCandidateStage, scheduleInterview, updateBranding, approveCandidate, stats, isLoading, error, logout, session };
+  return {
+    jobs,
+    candidates,
+    interviews,
+    branding,
+    addJob,
+    updateJob,
+    updateCandidateStage,
+    scheduleInterview,
+    updateBranding,
+    approveCandidate,
+    refreshData: fetchData,
+    stats,
+    isLoading,
+    error,
+    logout,
+    session
+  };
 };

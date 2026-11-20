@@ -112,12 +112,14 @@ export async function onRequestPost({ request, env }) {
       return errorResponse("Candidate not found", "NOT_FOUND", 404, headers);
     }
 
+    const candidateName = candidate.name || candidate.full_name || 'New Team Member';
+
     // 1. Call AXiM Core API to provision user
     const coreApiUrl = env.AXIM_CORE_API_URL || 'https://mock.axim.us.com/api/v1/users/provision';
     const provisionResult = await syncWithBackoff(coreApiUrl, {
       candidate_id: candidate.id,
       email: candidate.email,
-      full_name: candidate.full_name,
+      full_name: candidateName,
       role: payload.role || 'employee',
       department: payload.department || 'general'
     }, { serviceName: 'AXiM Core Provisioning' });
@@ -127,7 +129,7 @@ export async function onRequestPost({ request, env }) {
     const crmResult = await syncWithBackoff(crmApiUrl, {
       candidate_id: candidate.id,
       email: candidate.email,
-      name: candidate.full_name,
+      name: candidateName,
       type: "employee",
       department: payload.department,
       start_date: payload.start_date,
@@ -154,8 +156,8 @@ export async function onRequestPost({ request, env }) {
     try {
       await sendHiringEmail({
         to: candidate.email,
-        subject: `Welcome to the team, ${candidate.full_name}!`,
-        html: `<p>Hi ${candidate.full_name},</p><p>We are thrilled to welcome you to the team. Your onboarding tasks have been generated.</p>`,
+        subject: `Welcome to the team, ${candidateName}!`,
+        html: `<p>Hi ${candidateName},</p><p>We are thrilled to welcome you to the AXiM team. Your onboarding tasks have been generated.</p>`,
         env
       });
       // Log success
@@ -176,7 +178,7 @@ export async function onRequestPost({ request, env }) {
     const candidateDossier = {
       candidateId: candidate.id,
       profile: {
-        fullName: candidate.full_name,
+        fullName: candidateName,
         email: candidate.email,
         resumeUrl: candidate.resume_url,
       },

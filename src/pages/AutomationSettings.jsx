@@ -25,7 +25,7 @@ const AutomationSettings = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
           <button 
-            onClick={() => navigate('/settings')}
+            onClick={() => navigate('/portal/settings')}
             className="flex items-center gap-2 text-slate-500 hover:text-slate-900 font-bold mb-2 group transition-colors"
           >
             <SafeIcon icon={FiArrowLeft} className="group-hover:-translate-x-1 transition-transform" /> Back to Settings

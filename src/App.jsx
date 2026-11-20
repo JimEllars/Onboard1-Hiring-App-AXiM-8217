@@ -45,6 +45,7 @@ function App() {
         <Route path="/apply/video-assessment" element={<AsyncVideoInterview />} />
         <Route path="/apply/schedule" element={<InterviewScheduling />} />
         <Route path="/apply/:id" element={<ApplicationForm />} />
+        <Route path="/apply/progress/:id" element={<CandidateProgress />} />
         <Route path="/offer/:candidateId" element={<JobOffer />} />
 
         {/* Recruiter Portal Routes */}

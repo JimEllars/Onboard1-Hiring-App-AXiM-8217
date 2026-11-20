@@ -30,10 +30,11 @@ const CandidateProgress = () => {
 
   useEffect(() => {
     logEvent('candidate_portal_viewed', { candidateId: id });
-    const foundCandidate = candidates.find(c => c.id === parseInt(id));
+    const foundCandidate = candidates.find(c => String(c.id) === String(id));
     if (foundCandidate) {
       setCandidate(prev => ({
         ...prev,
+        id: foundCandidate.id,
         name: foundCandidate.name || prev.name,
         role: foundCandidate.role || prev.role,
         avatar: foundCandidate.avatar || prev.avatar,
@@ -113,7 +114,7 @@ const CandidateProgress = () => {
     <div className="max-w-6xl mx-auto space-y-8 pb-12">
       <div className="flex items-center justify-between">
         <button 
-          onClick={() => navigate('/candidates')}
+          onClick={() => navigate('/portal/candidates')}
           className="flex items-center gap-2 text-slate-500 hover:text-slate-900 font-bold transition-colors"
         >
           <SafeIcon icon={FiArrowLeft} /> Back to Candidates

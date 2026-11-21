@@ -156,6 +156,27 @@ const JobDetails = () => {
             <ReactECharts option={trendOption} style={{ height: '250px' }} />
           </div>
           
+          <div className="bg-slate-900 p-8 rounded-3xl text-white shadow-xl relative overflow-hidden">
+            <div className="relative z-10">
+              <span className="text-[10px] font-black uppercase tracking-widest text-blue-400 bg-blue-500/20 px-3 py-1 rounded-full border border-blue-500/30">
+                Active Automation Pipeline
+              </span>
+              <h3 className="text-xl font-bold mt-3 mb-2">{job.workflowTemplate || 'Standard Employee'}</h3>
+              <p className="text-slate-400 text-xs font-medium leading-relaxed mb-6">
+                All candidates applying to this role are routed through the automated {job.workflowTemplate || 'Standard'} verification, video screen, and e-sign workflow.
+              </p>
+              <div className="space-y-2">
+                {['1. Application & Resume Intake', '2. Direct Fit Survey Nudge', '3. Asynchronous Video Interview', '4. Live Cal.com / WebRTC Round', '5. Automated Checkr Background', '6. Digital W-2/1099 Offer Letter'].map((step, idx) => (
+                  <div key={idx} className="flex items-center gap-2 text-xs font-bold text-slate-300">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                    <span>{step}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="absolute right-0 bottom-0 w-32 h-32 bg-blue-600/10 rounded-full blur-2xl pointer-events-none" />
+          </div>
+
           <div className="bg-blue-600 p-8 rounded-3xl text-white shadow-lg shadow-blue-100">
             <h3 className="text-lg font-bold mb-2">Hiring Team</h3>
             <p className="text-blue-100 text-sm mb-6">People assigned to this position</p>

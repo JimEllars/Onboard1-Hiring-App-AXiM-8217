@@ -15,7 +15,8 @@ const CreateJobModal = ({ isOpen, onClose, onPublish }) => {
     location: 'Remote',
     type: 'Full-time',
     salary: '',
-    description: ''
+    description: '',
+    workflowTemplate: 'Standard Employee'
   });
 
   if (!isOpen) return null;
@@ -123,6 +124,21 @@ const CreateJobModal = ({ isOpen, onClose, onPublish }) => {
                     {type}
                   </button>
                 ))}
+              </div>
+
+              <div className="space-y-2 pt-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Automated Hiring Workflow Pipeline</label>
+                <select
+                  value={formData.workflowTemplate}
+                  onChange={(e) => setFormData({...formData, workflowTemplate: e.target.value})}
+                  className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-500 font-bold transition-all text-sm text-slate-900"
+                >
+                  <option value="Standard Employee">Standard Employee (6 Steps: Fit Survey → Video → Live → Checkr → Offer)</option>
+                  <option value="Engineering Specialized">Engineering Specialized (8 Steps: Fit Survey → Technical Video → Arch Pairing → Checkr → W-2 Offer)</option>
+                  <option value="Executive Suite">Executive Suite (10 Steps: Strategy Survey → Panel Video → Board Interview → Comprehensive Checkr → Exec Offer)</option>
+                  <option value="Enterprise Outbound Sales">Enterprise Outbound Sales (7 Steps: Fit Survey → Pitch Video → Mock Demo → Background → 1099/W-2 Offer)</option>
+                </select>
+                <p className="text-[11px] text-slate-400 font-medium">Applicants to this position will automatically follow this sequence of automated checks and e-signing workflows.</p>
               </div>
             </motion.div>
           )}

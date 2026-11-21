@@ -15,17 +15,91 @@ const OnboardingWorkflows = () => {
   const [activeTab, setActiveTab] = useState('templates');
   const [showBuilder, setShowBuilder] = useState(false);
 
-  const reminderRules = [
+  const initialReminders = [
     { id: 1, trigger: 'Missing Document', frequency: 'Every 2 days', channel: 'Email + SMS', status: 'Active', target: 'Candidate' },
     { id: 2, trigger: 'Manager Approval Pending', frequency: 'Daily', channel: 'Slack', status: 'Active', target: 'Manager' },
     { id: 3, trigger: 'IT Asset Not Confirmed', frequency: 'After 3 days', channel: 'Email', status: 'Paused', target: 'IT Support' },
   ];
 
-  const templates = [
-    { id: 1, name: 'Standard Employee', steps: 12, usage: 45, status: 'Active', category: 'General', color: 'bg-blue-50 text-blue-600' },
-    { id: 2, name: 'Engineering Specialized', steps: 18, usage: 22, status: 'Active', category: 'Technical', color: 'bg-indigo-50 text-indigo-600' },
-    { id: 3, name: 'Executive Suite', steps: 24, usage: 5, status: 'Draft', category: 'Leadership', color: 'bg-purple-50 text-purple-600' },
+  const initialTemplates = [
+    { id: 1, name: 'Standard Employee', steps: 6, usage: 45, status: 'Active', category: 'General', color: 'bg-blue-50 text-blue-600', stepList: ['Sign Offer Letter', 'Background Check', 'Identity Verification', 'IT Provisioning', 'Direct Deposit', 'Orientation'] },
+    { id: 2, name: 'Engineering Specialized', steps: 8, usage: 22, status: 'Active', category: 'Technical', color: 'bg-indigo-50 text-indigo-600', stepList: ['Sign W-2 Offer', 'Background Check', 'GitHub & AWS Access', 'Development Hardware', 'Security Policy', 'Architecture Walkthrough', '1:1 Mentor Pairing', 'First PR Milestone'] },
+    { id: 3, name: 'Executive Suite', steps: 10, usage: 5, status: 'Active', category: 'Leadership', color: 'bg-purple-50 text-purple-600', stepList: ['Executive Agreement', 'Comprehensive Checkr', 'Board Introduction', 'Strategic Briefing', 'Direct Reports Alignment', 'Corporate Card & Travel', 'IT Asset Provisioning', 'Stakeholder Meet & Greet', '90-Day Vision Plan', 'Media & Bio Release'] },
   ];
+
+  const [templates, setTemplates] = useState(() => {
+    try {
+      const saved = localStorage.getItem('axim_onboard1_workflow_templates');
+      return saved ? JSON.parse(saved) : initialTemplates;
+    } catch {
+      return initialTemplates;
+    }
+  });
+
+  const [reminderRules, setReminderRules] = useState(() => {
+    try {
+      const saved = localStorage.getItem('axim_onboard1_reminder_rules');
+      return saved ? JSON.parse(saved) : initialReminders;
+    } catch {
+      return initialReminders;
+    }
+  });
+
+  const [newTemplateName, setNewTemplateName] = useState('');
+  const [newTemplateCategory, setNewTemplateCategory] = useState('General');
+  const [builderSteps, setBuilderSteps] = useState([
+    { id: 1, label: 'Sign Offer Letter', type: 'Document', icon: FiFileText },
+    { id: 2, label: 'Identity Verification', type: 'Security', icon: FiShield },
+    { id: 3, label: 'IT Asset Provisioning', type: 'Ops', icon: FiCpu },
+  ]);
+  const [newStepLabel, setNewStepLabel] = useState('');
+
+  const handleToggleReminder = (id) => {
+    setReminderRules(prev => {
+      const updated = prev.map(r => r.id === id ? { ...r, status: r.status === 'Active' ? 'Paused' : 'Active' } : r);
+      localStorage.setItem('axim_onboard1_reminder_rules', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const handleSaveTemplate = () => {
+    if (!newTemplateName.trim()) return;
+    const newTemplate = {
+      id: Date.now(),
+      name: newTemplateName.trim(),
+      steps: builderSteps.length,
+      usage: 0,
+      status: 'Active',
+      category: newTemplateCategory,
+      color: newTemplateCategory === 'Technical' ? 'bg-indigo-50 text-indigo-600' : newTemplateCategory === 'Leadership' ? 'bg-purple-50 text-purple-600' : 'bg-blue-50 text-blue-600',
+      stepList: builderSteps.map(s => s.label)
+    };
+
+    const updated = [newTemplate, ...templates];
+    setTemplates(updated);
+    localStorage.setItem('axim_onboard1_workflow_templates', JSON.stringify(updated));
+    setNewTemplateName('');
+    setShowBuilder(false);
+  };
+
+  const handleDeleteTemplate = (id) => {
+    const updated = templates.filter(t => t.id !== id);
+    setTemplates(updated);
+    localStorage.setItem('axim_onboard1_workflow_templates', JSON.stringify(updated));
+  };
+
+  const handleAddStepToBuilder = () => {
+    if (!newStepLabel.trim()) return;
+    setBuilderSteps(prev => [
+      ...prev,
+      { id: Date.now(), label: newStepLabel.trim(), type: 'Custom', icon: FiCheckSquare }
+    ]);
+    setNewStepLabel('');
+  };
+
+  const handleRemoveStepFromBuilder = (id) => {
+    setBuilderSteps(prev => prev.filter(s => s.id !== id));
+  };
 
   return (
     <div className="space-y-8 pb-12">
@@ -99,10 +173,16 @@ const OnboardingWorkflows = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
-                  <span className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border ${rule.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>
+                  <button 
+                    onClick={() => handleToggleReminder(rule.id)}
+                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${rule.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-100' : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'}`}
+                  >
                     {rule.status}
-                  </span>
-                  <button className="p-3 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all">
+                  </button>
+                  <button 
+                    onClick={() => handleToggleReminder(rule.id)}
+                    className="p-3 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                  >
                     <SafeIcon icon={FiEdit3} />
                   </button>
                 </div>
@@ -126,8 +206,25 @@ const OnboardingWorkflows = () => {
                     <SafeIcon icon={FiSettings} />
                   </div>
                   <div className="flex gap-2">
-                    <button className="p-2.5 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl transition-all"><SafeIcon icon={FiCopy} /></button>
-                    <button className="p-2.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"><SafeIcon icon={FiTrash2} /></button>
+                    <button 
+                      onClick={() => {
+                        const copy = { ...wf, id: Date.now(), name: `${wf.name} (Copy)` };
+                        const updated = [copy, ...templates];
+                        setTemplates(updated);
+                        localStorage.setItem('axim_onboard1_workflow_templates', JSON.stringify(updated));
+                      }}
+                      title="Duplicate Template"
+                      className="p-2.5 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl transition-all"
+                    >
+                      <SafeIcon icon={FiCopy} />
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteTemplate(wf.id)}
+                      title="Delete Template"
+                      className="p-2.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                    >
+                      <SafeIcon icon={FiTrash2} />
+                    </button>
                   </div>
                 </div>
                 <div className="mb-8 flex-1">
@@ -180,43 +277,80 @@ const OnboardingWorkflows = () => {
               </div>
               <div className="flex-1 overflow-y-auto p-12 space-y-10">
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Template Basics</label>
-                  <input type="text" placeholder="e.g., Senior Engineering Onboarding" className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-lg font-bold outline-none focus:border-blue-500 transition-all" />
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Template Name & Department</label>
+                  <input 
+                    type="text" 
+                    value={newTemplateName}
+                    onChange={(e) => setNewTemplateName(e.target.value)}
+                    placeholder="e.g., Enterprise Outbound Sales Onboarding" 
+                    className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-lg font-bold outline-none focus:border-blue-500 transition-all" 
+                  />
+                  <div className="flex gap-2 pt-2">
+                    {['General', 'Technical', 'Leadership', 'Sales'].map(cat => (
+                      <button
+                        key={cat}
+                        onClick={() => setNewTemplateCategory(cat)}
+                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${newTemplateCategory === cat ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 
                 <div className="space-y-6">
                   <div className="flex justify-between items-center">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Action Sequence</label>
-                    <button className="text-blue-600 text-xs font-black uppercase tracking-widest flex items-center gap-1 hover:underline">
-                      <SafeIcon icon={FiPlus} /> Add Step
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Action Sequence ({builderSteps.length} Steps)</label>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <input 
+                      type="text"
+                      placeholder="Add new step (e.g. CRM Credentials Provisioning)..."
+                      value={newStepLabel}
+                      onChange={(e) => setNewStepLabel(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddStepToBuilder())}
+                      className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-blue-500"
+                    />
+                    <button 
+                      onClick={handleAddStepToBuilder}
+                      className="px-6 py-3 bg-blue-600 text-white rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-blue-700 transition-all flex items-center gap-1.5"
+                    >
+                      <SafeIcon icon={FiPlus} /> Add
                     </button>
                   </div>
+
                   <div className="space-y-4">
-                    {[
-                      { id: 1, label: 'Sign Offer Letter', type: 'Document', icon: FiFileText },
-                      { id: 2, label: 'Identity Verification', type: 'Security', icon: FiShield },
-                      { id: 3, label: 'IT Asset Provisioning', type: 'Ops', icon: FiCpu },
-                    ].map((step, i) => (
-                      <div key={step.id} className="p-6 bg-white border border-slate-200 rounded-[24px] flex items-center gap-6 group hover:border-blue-500 transition-all cursor-move">
+                    {builderSteps.map((step, i) => (
+                      <div key={step.id} className="p-6 bg-white border border-slate-200 rounded-[24px] flex items-center gap-6 group hover:border-blue-500 transition-all">
                         <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 font-black text-xs">
                           {i + 1}
                         </div>
                         <div className={`w-12 h-12 rounded-xl bg-slate-50 text-slate-500 flex items-center justify-center text-xl group-hover:bg-blue-50 group-hover:text-blue-600 transition-all`}>
-                          <SafeIcon icon={step.icon} />
+                          <SafeIcon icon={step.icon || FiCheckSquare} />
                         </div>
                         <div className="flex-1">
                           <h4 className="font-bold text-slate-900">{step.label}</h4>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{step.type}</p>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{step.type || 'Custom Action'}</p>
                         </div>
-                        <button className="p-2 text-slate-300 hover:text-red-500 transition-colors"><SafeIcon icon={FiTrash2} /></button>
+                        <button 
+                          onClick={() => handleRemoveStepFromBuilder(step.id)}
+                          className="p-2 text-slate-300 hover:text-red-500 transition-colors"
+                        >
+                          <SafeIcon icon={FiTrash2} />
+                        </button>
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
               <div className="p-8 border-t border-slate-100 flex gap-4 bg-slate-50/50">
-                <button className="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-bold hover:bg-slate-800 transition-all shadow-xl shadow-slate-200">
-                  Save Template
+                <button 
+                  onClick={handleSaveTemplate}
+                  disabled={!newTemplateName.trim()}
+                  className="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-bold hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 disabled:opacity-50"
+                >
+                  Save & Activate Template
                 </button>
               </div>
             </motion.div>

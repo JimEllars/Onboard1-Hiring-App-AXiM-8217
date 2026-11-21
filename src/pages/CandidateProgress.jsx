@@ -32,21 +32,24 @@ const CandidateProgress = () => {
     logEvent('candidate_portal_viewed', { candidateId: id });
     const foundCandidate = candidates.find(c => String(c.id) === String(id));
     if (foundCandidate) {
+      const canonicalStage = foundCandidate.stage === 'Screening' ? 'Screening/Checkr' : (foundCandidate.stage || 'Applied');
       setCandidate(prev => ({
         ...prev,
         id: foundCandidate.id,
         name: foundCandidate.name || prev.name,
         role: foundCandidate.role || prev.role,
         avatar: foundCandidate.avatar || prev.avatar,
-        currentStage: foundCandidate.stage || prev.currentStage,
+        currentStage: canonicalStage,
         appliedDate: foundCandidate.applied || prev.appliedDate
       }));
 
-      const activeStageIndex = stages.findIndex(s => s.name === foundCandidate.stage);
+      const activeStageIndex = CANONICAL_STAGES.findIndex(s => s === canonicalStage);
       if (activeStageIndex !== -1) {
-        setStages(prev => prev.map((s, idx) => ({
-          ...s,
-          status: idx < activeStageIndex ? 'completed' : idx === activeStageIndex ? 'current' : 'pending'
+        setStages(CANONICAL_STAGES.map((s, idx) => ({
+          name: s,
+          status: idx < activeStageIndex ? 'completed' : idx === activeStageIndex ? 'current' : 'pending',
+          duration: '-',
+          date: idx <= activeStageIndex ? 'Completed' : 'Upcoming'
         })));
       }
     }
@@ -56,24 +59,31 @@ const CandidateProgress = () => {
 
   const getCtaLabel = (stageName) => {
     switch (stageName) {
+      case 'Applied': return 'Begin Fit Survey';
       case 'Fit Survey': return 'Complete Fit Survey';
       case 'Video Assessment': return 'Start Video Assessment';
       case 'Live Interview': return 'Schedule Live Interview';
+      case 'Screening/Checkr': return 'View Screening & Eval';
       case 'Offer / E-Sign': return 'Review & Sign Offer';
+      case 'Hired': return 'View Onboarding Profile';
       default: return 'Move to Next Stage';
     }
   };
 
   const getCtaAction = (stageName) => {
     logEvent(TELEMETRY_EVENTS.TASK_ACTION_CLICKED || 'task_action_clicked', { candidateId: candidate.id, currentStage: stageName });
-    if (stageName === 'Fit Survey') {
+    if (stageName === 'Applied' || stageName === 'Fit Survey') {
        navigate(`/apply/questionnaire?verified=true&candidateId=${candidate.id}`);
     } else if (stageName === 'Video Assessment') {
        navigate(`/apply/video-assessment?candidateId=${candidate.id}`);
     } else if (stageName === 'Live Interview') {
        navigate(`/apply/schedule?candidateId=${candidate.id}`);
+    } else if (stageName === 'Screening/Checkr') {
+       navigate(`/portal/candidates/${candidate.id}/evaluate`);
     } else if (stageName === 'Offer / E-Sign') {
        navigate(`/offer/${candidate.id}`);
+    } else if (stageName === 'Hired') {
+       navigate(`/portal/onboarding/1`);
     } else {
        handleMoveToNextStage();
     }

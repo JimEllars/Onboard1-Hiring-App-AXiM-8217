@@ -47,6 +47,12 @@ const JobOffer = () => {
     } catch (err) {
       console.error('Error finalizing hire:', err);
     } finally {
+      // Synchronize candidate state across the ecosystem to 'Hired'
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('candidate-stage-updated', {
+          detail: { candidateId: id, newStage: 'Hired' }
+        }));
+      }
       setIsComplete(true);
       setIsLoading(false);
     }
@@ -202,16 +208,22 @@ const JobOffer = () => {
             Download / Print Signed Agreement
           </button>
           <button
+            onClick={() => window.location.href = `/apply/progress/${candidateId}`}
+            className="inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-bold rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors w-full mb-3 shadow-md"
+          >
+            View Candidate Status Portal
+          </button>
+          <button
             onClick={() => window.location.href = 'https://agentview.axim.us.com'}
             className="inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 transition-colors w-full mb-3"
           >
             Access AgentView Portal
           </button>
           <button
-            onClick={() => window.location.href = '/'}
+            onClick={() => window.location.href = '/jobs'}
             className="inline-flex justify-center items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors w-full"
           >
-            Go to Homepage
+            Return to AXiM Careers
           </button>
         </div>
       </motion.div>

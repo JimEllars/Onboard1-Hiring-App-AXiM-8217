@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { logEvent, TELEMETRY_EVENTS } from '../lib/telemetry';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
@@ -14,6 +14,8 @@ const {
 const CandidateProgress = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isPortalMode = location.pathname.startsWith('/portal');
   const { candidates, updateCandidateStage } = useOnboardData();
 
   const [candidate, setCandidate] = useState({
@@ -125,14 +127,33 @@ const CandidateProgress = () => {
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-12">
       <div className="flex items-center justify-between">
-        <button 
-          onClick={() => navigate('/portal/candidates')}
-          className="flex items-center gap-2 text-slate-500 hover:text-slate-900 font-bold transition-colors"
-        >
-          <SafeIcon icon={FiArrowLeft} /> Back to Candidates
-        </button>
+        {isPortalMode ? (
+          <button 
+            onClick={() => navigate('/portal/candidates')}
+            className="flex items-center gap-2 text-slate-500 hover:text-slate-900 font-bold transition-colors"
+          >
+            <SafeIcon icon={FiArrowLeft} /> Back to Candidates
+          </button>
+        ) : (
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => navigate('/jobs')}
+              className="flex items-center gap-2 text-slate-500 hover:text-slate-900 font-bold transition-colors text-sm"
+            >
+              <SafeIcon icon={FiArrowLeft} /> AXiM Careers
+            </button>
+            <span className="text-slate-300">|</span>
+            <span className="text-xs font-black uppercase tracking-wider text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
+              Candidate Status Portal
+            </span>
+          </div>
+        )}
         <div className="flex gap-3">
-          <button className="px-6 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-700 font-bold text-sm hover:bg-slate-50 transition-colors">Edit Pipeline</button>
+          {isPortalMode && (
+            <button className="px-6 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-700 font-bold text-sm hover:bg-slate-50 transition-colors">
+              Edit Pipeline
+            </button>
+          )}
           <button onClick={() => getCtaAction(candidate.currentStage)} disabled={isMoving} className="flex items-center justify-center min-w-[160px] px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 disabled:opacity-70">
             {isMoving ? (
                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

@@ -14,7 +14,7 @@ const {
 const CandidateProgress = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { candidates } = useOnboardData();
+  const { candidates, updateCandidateStage } = useOnboardData();
 
   const [candidate, setCandidate] = useState({
     name: 'Eleanor Pena',
@@ -99,11 +99,13 @@ const CandidateProgress = () => {
         newStages[currentIndex + 1].status = 'current';
 
         setStages(newStages);
-        setCandidate(prev => ({ ...prev, currentStage: newStages[currentIndex + 1].name }));
+        const nextStageName = newStages[currentIndex + 1].name;
+        setCandidate(prev => ({ ...prev, currentStage: nextStageName }));
+        updateCandidateStage(id, nextStageName);
         logEvent(TELEMETRY_EVENTS.CANDIDATE_PIPELINE_EVENT, {
           action: 'stage_change',
           candidateId: id,
-          newStage: newStages[currentIndex + 1].name
+          newStage: nextStageName
         });
       }
       setIsMoving(false);

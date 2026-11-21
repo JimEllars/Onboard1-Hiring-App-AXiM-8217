@@ -13,7 +13,7 @@ const stages = ['Applied', 'Fit Survey', 'Video Assessment', 'Live Interview', '
 const CandidateDetails = ({ candidate, onClose, onEvaluate, onViewScores, onViewProgress, onMoveStage, onApprove, onReject }) => {
   if (!candidate) return null;
 
-  const nextStage = stages[stages.indexOf(candidate.stage) + 1];
+  const nextStage = stages[stages.indexOf(candidate.stage) + 1] || (candidate.stage === 'Screening' ? 'Video Assessment' : null);
 
   return (
     <motion.div 
@@ -256,8 +256,12 @@ const Candidates = () => {
                     </td>
                     <td className="py-6 px-10">
                       <span className={`inline-flex items-center px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border ${
-                        candidate.stage === 'Offer' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 
-                        candidate.stage === 'Interview' ? 'bg-purple-50 text-purple-700 border-purple-100' : 
+                        candidate.stage === 'Hired' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
+                        candidate.stage === 'Offer / E-Sign' || candidate.stage === 'Offer' ? 'bg-amber-50 text-amber-700 border-amber-100' : 
+                        candidate.stage === 'Live Interview' || candidate.stage === 'Interview' ? 'bg-purple-50 text-purple-700 border-purple-100' : 
+                        candidate.stage === 'Archived / Closed' ? 'bg-rose-50 text-rose-700 border-rose-100' :
+                        candidate.stage === 'Screening/Checkr' ? 'bg-teal-50 text-teal-700 border-teal-100' :
+                        candidate.stage === 'Video Assessment' ? 'bg-indigo-50 text-indigo-700 border-indigo-100' :
                         'bg-blue-50 text-blue-700 border-blue-100'
                       }`}>
                         {candidate.stage}

@@ -69,12 +69,12 @@ const InterviewScheduling = () => {
               </div>
             </div>
 
-            <div className="lg:col-span-2">
-              <div className="bg-white border border-slate-200 rounded-3xl p-8 min-h-[500px] flex flex-col justify-center text-center shadow-sm">
+            <div className="lg:col-span-2 space-y-4">
+              <div className="bg-white border border-slate-200 rounded-3xl p-6 min-h-[460px] flex flex-col justify-center text-center shadow-sm relative overflow-hidden">
                 <Cal
                   namespace="live-interview"
                   calLink="axim-onboard/live-interview"
-                  style={{ width: "100%", height: "100%", overflow: "scroll" }}
+                  style={{ width: "100%", height: "100%", minHeight: "420px", overflow: "scroll" }}
                   config={{
                     name: name,
                     email: email,

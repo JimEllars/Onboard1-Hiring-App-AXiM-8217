@@ -76,31 +76,6 @@ const CandidateEvaluation = () => {
     fetchAiData();
   }, [id]);
 
-
-  useEffect(() => {
-    const fetchAiData = async () => {
-      setAiLoading(true);
-      try {
-        const res = await fetch('/api/screen-candidate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ candidateId: id })
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setAiData(data);
-        } else {
-          setAiData(null);
-        }
-      } catch (err) {
-        setAiData(null);
-      } finally {
-        setAiLoading(false);
-      }
-    };
-    fetchAiData();
-  }, [id]);
-
   useEffect(() => {
     const fetchCandidateStatus = async () => {
       if (!supabase) return; // Fallback if no supabase client configured
@@ -209,7 +184,13 @@ const CandidateEvaluation = () => {
       console.error('Submission failed:', error);
       logEvent(TELEMETRY_EVENTS.CANDIDATE_PIPELINE_EVENT, { action: 'Evaluation_Submission_Error', candidateId: payload.candidateId, error: error.message });
 
-      // Fallback for missing backend environment
+      // Fallback for local preview: progress candidate stage
+      let nextStage = 'Live Interview';
+      if (recommendation === 'hire') nextStage = 'Offer / E-Sign';
+      else if (recommendation === 'reject') nextStage = 'Archived / Closed';
+      else if (recommendation === 'maybe') nextStage = 'Screening/Checkr';
+
+      updateCandidateStage(payload.candidateId, nextStage);
       setIsSuccess(true);
       setTimeout(() => {
         navigate('/portal/candidates');

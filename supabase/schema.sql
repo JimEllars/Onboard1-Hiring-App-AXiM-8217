@@ -19,7 +19,13 @@ CREATE TABLE IF NOT EXISTS public.onboard1_jobs (
     salary TEXT NOT NULL DEFAULT 'Competitive',
     description TEXT,
     requirements JSONB DEFAULT '[]'::jsonb,
-    status TEXT NOT NULL DEFAULT 'Active', -- 'Active', 'Paused', 'Closed'
+    status TEXT NOT NULL DEFAULT 'Active', -- 'Active', 'Paused', 'Closed', 'Expired'
+    duration_type TEXT NOT NULL DEFAULT 'indefinite', -- 'indefinite', 'fixed_duration', 'auto_renew'
+    expires_at TIMESTAMPTZ,
+    renewal_interval_days INTEGER DEFAULT 30,
+    auto_renew BOOLEAN NOT NULL DEFAULT false,
+    workflow_template TEXT NOT NULL DEFAULT 'Standard Employee',
+    campaign_id TEXT,
     candidates INTEGER NOT NULL DEFAULT 0,
     organization_id TEXT,
     tenant_id TEXT,
@@ -29,6 +35,7 @@ CREATE TABLE IF NOT EXISTS public.onboard1_jobs (
 
 CREATE INDEX IF NOT EXISTS idx_onboard1_jobs_status ON public.onboard1_jobs(status);
 CREATE INDEX IF NOT EXISTS idx_onboard1_jobs_created_at ON public.onboard1_jobs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_onboard1_jobs_expires_at ON public.onboard1_jobs(expires_at);
 
 -- ------------------------------------------------------------------------------
 -- 2. onboard1_candidates: Candidate profiles, stage progression, and intake data
@@ -47,8 +54,8 @@ CREATE TABLE IF NOT EXISTS public.onboard1_candidates (
     referral_code TEXT,
     organization_id TEXT,
     tenant_id TEXT,
-    status TEXT NOT NULL DEFAULT 'applied', -- 'applied', 'questionnaire_completed', 'video_submitted', 'pending_signature', 'signed', 'hired', 'rejected'
-    stage TEXT NOT NULL DEFAULT 'Screening', -- 'Applied', 'Screening', 'Fit Survey', 'Video Assessment', 'Live Interview', 'Screening/Checkr', 'Offer / E-Sign', 'Hired', 'Archived / Closed'
+    status TEXT NOT NULL DEFAULT 'applied', -- 'applied', 'on_hold', 'approved', 'questionnaire_completed', 'video_submitted', 'pending_signature', 'signed', 'hired', 'rejected'
+    stage TEXT NOT NULL DEFAULT 'Screening', -- 'Applied', 'Screening', 'On Hold', 'Fit Survey', 'Video Assessment', 'Live Interview', 'Screening/Checkr', 'Offer / E-Sign', 'Hired', 'Archived / Closed'
     rating NUMERIC(2,1) DEFAULT 4.0,
     avatar TEXT,
     video_url TEXT,
@@ -59,6 +66,8 @@ CREATE TABLE IF NOT EXISTS public.onboard1_candidates (
     signing_token TEXT,
     doc_type TEXT DEFAULT 'W-2', -- 'W-2', '1099'
     signature_data JSONB,
+    hold_reason TEXT,
+    hold_until TIMESTAMPTZ,
     disposition_reason TEXT,
     metadata JSONB DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -146,7 +155,27 @@ CREATE TABLE IF NOT EXISTS public.user_roles (
 );
 
 -- ------------------------------------------------------------------------------
--- 8. Row-Level Security (RLS) Policies
+-- 8. onboard1_campaign_automations: Event-driven campaign workflow rules
+-- ------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.onboard1_campaign_automations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    campaign_id TEXT,
+    job_id UUID REFERENCES public.onboard1_jobs(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    trigger_event TEXT NOT NULL, -- 'application_submitted', 'application_approved', 'application_held', 'application_rejected', 'campaign_renew_due', 'stage_stagnation'
+    action_type TEXT NOT NULL, -- 'send_email', 'assign_workflow', 'notify_slack', 'renew_listing', 'archive_candidate'
+    action_config JSONB DEFAULT '{}'::jsonb,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    execution_count INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_campaign_automations_job ON public.onboard1_campaign_automations(job_id);
+CREATE INDEX IF NOT EXISTS idx_campaign_automations_event ON public.onboard1_campaign_automations(trigger_event);
+
+-- ------------------------------------------------------------------------------
+-- 9. Row-Level Security (RLS) Policies
 -- ------------------------------------------------------------------------------
 ALTER TABLE public.onboard1_jobs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.onboard1_candidates ENABLE ROW LEVEL SECURITY;
@@ -154,6 +183,12 @@ ALTER TABLE public.onboard1_questionnaire_responses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.onboard1_evaluations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.onboarding_tasks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.api_usage_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.onboard1_campaign_automations ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Authenticated users access automations" ON public.onboard1_campaign_automations;
+CREATE POLICY "Authenticated users access automations" ON public.onboard1_campaign_automations
+    FOR ALL USING (auth.role() = 'authenticated' OR auth.role() = 'service_role');
 ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
 
 -- Allow public / candidates to read active jobs

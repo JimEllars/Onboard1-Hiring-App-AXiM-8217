@@ -1,5 +1,5 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import ReactECharts from 'echarts-for-react';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
@@ -7,18 +7,53 @@ import { useOnboardData } from '../hooks/useOnboardData';
 import { useNavigate } from 'react-router-dom';
 import { logEvent } from '../lib/telemetry';
 
-const { FiUsers, FiBriefcase, FiCheckCircle, FiClock, FiTrendingUp, FiArrowRight, FiActivity } = FiIcons;
+const { 
+  FiUsers, FiBriefcase, FiCheckCircle, FiClock, FiTrendingUp, 
+  FiArrowRight, FiActivity, FiCheck, FiX, FiPauseCircle, FiFileText, FiEye, FiFilter 
+} = FiIcons;
 
 const Dashboard = () => {
-  const { stats, candidates } = useOnboardData();
+  const { stats, candidates, approveCandidate, holdCandidate, rejectCandidate } = useOnboardData();
   const navigate = useNavigate();
+
+  const [triageToast, setTriageToast] = useState(null);
+  const [activeModal, setActiveModal] = useState(null); // { type: 'hold' | 'deny', candidate: object }
+  const [holdReason, setHoldReason] = useState('Qualifications strong; placing on hold for upcoming hiring cycle');
+  const [holdDays, setHoldDays] = useState(14);
+  const [dispositionReason, setDispositionReason] = useState('Skill Match');
 
   const statCards = [
     { title: 'Total Candidates', value: stats.totalCandidates.toLocaleString(), trend: '+12.5%', icon: FiUsers, color: 'bg-blue-600' },
     { title: 'Open Positions', value: stats.activeJobs, trend: '+4', icon: FiBriefcase, color: 'bg-indigo-600' },
-    { title: 'Interviews Today', value: stats.interviewsToday, trend: 'High Volume', icon: FiClock, color: 'bg-amber-500' },
+    { title: 'On Hold / Review', value: (stats.onHoldCandidates || 0).toString(), trend: 'Active Pool', icon: FiPauseCircle, color: 'bg-amber-500' },
     { title: 'Hired This Month', value: stats.hiredThisMonth, trend: '+8.2%', icon: FiCheckCircle, color: 'bg-emerald-600' },
   ];
+
+  const handleQuickApprove = async (candidate) => {
+    await approveCandidate(candidate.id, 'Video Assessment');
+    setTriageToast(`Approved ${candidate.name}! Advanced to Video Assessment & dispatched campaign invitation.`);
+    setTimeout(() => setTriageToast(null), 4000);
+  };
+
+  const handleConfirmHold = async () => {
+    if (!activeModal?.candidate) return;
+    await holdCandidate(activeModal.candidate.id, holdReason, holdDays);
+    setTriageToast(`Placed ${activeModal.candidate.name} on Hold for ${holdDays} days.`);
+    setActiveModal(null);
+    setTimeout(() => setTriageToast(null), 4000);
+  };
+
+  const handleConfirmDeny = async () => {
+    if (!activeModal?.candidate) return;
+    await rejectCandidate(activeModal.candidate.id, dispositionReason);
+    setTriageToast(`Application for ${activeModal.candidate.name} archived (${dispositionReason}).`);
+    setActiveModal(null);
+    setTimeout(() => setTriageToast(null), 4000);
+  };
+
+  const intakeCandidates = (candidates || []).filter(c => 
+    c.stage === 'Applied' || c.stage === 'Screening' || c.stage === 'On Hold'
+  );
 
   const chartOption = {
     tooltip: { trigger: 'axis' },
@@ -44,10 +79,27 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-8 pb-12">
+      {triageToast && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0 }}
+          className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl flex items-center justify-between font-bold text-sm shadow-sm"
+        >
+          <div className="flex items-center gap-2">
+            <SafeIcon icon={FiCheck} className="text-emerald-600 text-lg" />
+            <span>{triageToast}</span>
+          </div>
+          <button onClick={() => setTriageToast(null)} className="text-emerald-500 hover:text-emerald-800">
+            <SafeIcon icon={FiX} />
+          </button>
+        </motion.div>
+      )}
+
       <div className="flex justify-between items-end">
         <div>
-          <h2 className="text-3xl font-black text-slate-900 tracking-tight">Welcome back, Sarah</h2>
-          <p className="text-slate-500 mt-1 font-medium">Here's what's happening with your recruitment pipeline today.</p>
+          <h2 className="text-3xl font-black text-slate-900 tracking-tight">Hiring Operations Dashboard</h2>
+          <p className="text-slate-500 mt-1 font-medium">Real-time candidate intake, application triage, and pipeline automations.</p>
         </div>
         <div className="flex gap-3">
           <button onClick={() => navigate('/portal/reports')} className="px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">View Reports</button>
@@ -84,32 +136,160 @@ const Dashboard = () => {
         ))}
       </div>
 
-
       {/* Live Pipeline Pulse */}
       <div>
         <h3 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-2">
           <SafeIcon icon={FiActivity} className="text-blue-600" /> Live Pipeline Pulse
         </h3>
         <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-          {['Applied', 'Fit Survey', 'Video Assessment', 'Live Interview', 'Screening/Checkr', 'Offer / E-Sign', 'Hired'].map((stage, idx) => {
-            const count = (candidates || []).filter(c => c.stage === stage).length;
+          {['Applied', 'Screening', 'On Hold', 'Fit Survey', 'Video Assessment', 'Live Interview', 'Screening/Checkr', 'Offer / E-Sign', 'Hired'].map((stage, idx) => {
+            const count = (candidates || []).filter(c => c.stage === stage || (stage === 'On Hold' && c.status === 'on_hold')).length;
+            const isHoldStage = stage === 'On Hold';
             return (
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: idx * 0.1 }}
+                transition={{ delay: idx * 0.05 }}
                 key={stage}
                 onClick={() => {
                   logEvent('dashboard_pipeline_pulse_clicked', { stage });
                   navigate(`/portal/candidates?stage=${encodeURIComponent(stage)}`);
                 }}
-                className="min-w-[140px] bg-white rounded-2xl p-4 shadow-sm border border-slate-100 cursor-pointer hover:border-blue-500 hover:shadow-md transition-all flex flex-col items-center justify-center gap-2 group"
+                className={`min-w-[130px] rounded-2xl p-4 shadow-sm border cursor-pointer hover:shadow-md transition-all flex flex-col items-center justify-center gap-2 group ${
+                  isHoldStage ? 'bg-amber-50/60 border-amber-200 hover:border-amber-400' : 'bg-white border-slate-100 hover:border-blue-500'
+                }`}
               >
-                <span className="text-3xl font-black text-slate-900 group-hover:text-blue-600 transition-colors">{count}</span>
+                <span className={`text-3xl font-black transition-colors ${isHoldStage ? 'text-amber-700' : 'text-slate-900 group-hover:text-blue-600'}`}>{count}</span>
                 <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest text-center">{stage}</span>
               </motion.div>
             );
           })}
+        </div>
+      </div>
+
+      {/* Real-time Applications Intake & Triage Section */}
+      <div className="bg-white rounded-[40px] p-8 md:p-10 shadow-sm border border-slate-100">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+          <div>
+            <div className="flex items-center gap-3">
+              <h3 className="text-2xl font-black text-slate-900 tracking-tight">Application Intake &amp; Triage Feed</h3>
+              <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-[10px] font-black uppercase tracking-wider border border-blue-200">
+                {intakeCandidates.length} Pending Review
+              </span>
+            </div>
+            <p className="text-sm text-slate-500 font-medium mt-1">Review incoming applicants and immediately Approve, place On Hold, or Deny applications.</p>
+          </div>
+          <button 
+            onClick={() => navigate('/portal/candidates')}
+            className="text-xs font-black uppercase tracking-wider text-blue-600 hover:text-blue-700 flex items-center gap-1.5 transition-colors"
+          >
+            View All in Candidates Pipeline <SafeIcon icon={FiArrowRight} />
+          </button>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50/60 border-b border-slate-100">
+                <th className="py-4 px-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Candidate</th>
+                <th className="py-4 px-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Applied Role</th>
+                <th className="py-4 px-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Intake Status</th>
+                <th className="py-4 px-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Documents</th>
+                <th className="py-4 px-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Triage Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {intakeCandidates.map((candidate) => (
+                <tr key={candidate.id} className="hover:bg-slate-50/50 transition-colors group">
+                  <td className="py-4 px-6">
+                    <div className="flex items-center gap-3">
+                      <img src={candidate.avatar} className="w-11 h-11 rounded-2xl object-cover border border-slate-200 shadow-sm" alt={candidate.name} />
+                      <div>
+                        <p className="text-sm font-black text-slate-900 leading-tight">{candidate.name}</p>
+                        <p className="text-xs text-slate-500">{candidate.email}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-4 px-6">
+                    <p className="text-xs font-bold text-slate-800">{candidate.role}</p>
+                    {candidate.referral_code && (
+                      <span className="inline-block mt-0.5 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider bg-purple-50 text-purple-600 border border-purple-100">
+                        Ref: {candidate.referral_code}
+                      </span>
+                    )}
+                    <p className="text-[10px] text-slate-400 font-medium">Applied {candidate.applied}</p>
+                  </td>
+                  <td className="py-4 px-6">
+                    <span className={`inline-flex items-center px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider border ${
+                      candidate.stage === 'On Hold' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                      candidate.stage === 'Screening' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                      'bg-slate-100 text-slate-700 border-slate-200'
+                    }`}>
+                      {candidate.stage}
+                    </span>
+                    {candidate.hold_reason && (
+                      <p className="text-[10px] text-amber-700 font-medium mt-1 truncate max-w-xs" title={candidate.hold_reason}>
+                        Hold: {candidate.hold_reason}
+                      </p>
+                    )}
+                  </td>
+                  <td className="py-4 px-6">
+                    {candidate.resume_url ? (
+                      <a 
+                        href={candidate.resume_url} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 hover:bg-blue-50 text-slate-600 hover:text-blue-600 rounded-lg text-xs font-bold border border-slate-200 transition-colors"
+                      >
+                        <SafeIcon icon={FiFileText} /> Resume
+                      </a>
+                    ) : (
+                      <span className="text-[11px] text-slate-400">None</span>
+                    )}
+                  </td>
+                  <td className="py-4 px-6 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      {/* Approve button */}
+                      <button
+                        onClick={() => handleQuickApprove(candidate)}
+                        title="Approve and advance to Video Assessment"
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[11px] font-black uppercase tracking-wider flex items-center gap-1 shadow-sm transition-all"
+                      >
+                        <SafeIcon icon={FiCheck} /> Approve
+                      </button>
+
+                      {/* Hold button */}
+                      <button
+                        onClick={() => setActiveModal({ type: 'hold', candidate })}
+                        title="Place candidate on hold"
+                        className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-xl text-[11px] font-black uppercase tracking-wider flex items-center gap-1 transition-all"
+                      >
+                        <SafeIcon icon={FiPauseCircle} /> Hold
+                      </button>
+
+                      {/* Deny button */}
+                      <button
+                        onClick={() => setActiveModal({ type: 'deny', candidate })}
+                        title="Deny / Reject application"
+                        className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-xl text-[11px] font-black uppercase tracking-wider flex items-center gap-1 transition-all"
+                      >
+                        <SafeIcon icon={FiX} /> Deny
+                      </button>
+
+                      {/* Evaluate link */}
+                      <button
+                        onClick={() => navigate(`/portal/candidate-evaluation/${candidate.id}`)}
+                        title="Open full candidate evaluation"
+                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-xl transition-all"
+                      >
+                        <SafeIcon icon={FiEye} className="text-base" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -158,6 +338,109 @@ const Dashboard = () => {
           </button>
         </motion.div>
       </div>
+
+      {/* Hold Modal */}
+      {activeModal?.type === 'hold' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-lg rounded-3xl p-8 shadow-2xl space-y-6">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+              <div>
+                <h3 className="text-xl font-black text-slate-900">Place Candidate On Hold</h3>
+                <p className="text-xs text-slate-500 font-bold mt-0.5">{activeModal.candidate.name} • {activeModal.candidate.role}</p>
+              </div>
+              <button onClick={() => setActiveModal(null)} className="p-2 hover:bg-slate-100 rounded-xl">
+                <SafeIcon icon={FiX} className="text-slate-400" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-black text-slate-400 uppercase tracking-wider block mb-2">Hold Reason</label>
+                <textarea
+                  rows="3"
+                  value={holdReason}
+                  onChange={(e) => setHoldReason(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-amber-500 font-medium text-sm resize-none"
+                  placeholder="Reason for holding candidate..."
+                ></textarea>
+              </div>
+
+              <div>
+                <label className="text-xs font-black text-slate-400 uppercase tracking-wider block mb-2">Hold Period</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[7, 14, 30].map((days) => (
+                    <button
+                      key={days}
+                      onClick={() => setHoldDays(days)}
+                      className={`py-2.5 rounded-xl font-black text-xs transition-all border ${
+                        holdDays === days ? 'bg-amber-500 text-white border-amber-500' : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-amber-400'
+                      }`}
+                    >
+                      {days} Days
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-4 border-t border-slate-100">
+              <button onClick={() => setActiveModal(null)} className="flex-1 py-3 text-xs font-black uppercase text-slate-500 hover:bg-slate-100 rounded-xl">
+                Cancel
+              </button>
+              <button onClick={handleConfirmHold} className="flex-1 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-md">
+                Confirm Hold
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Deny / Reject Modal */}
+      {activeModal?.type === 'deny' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-lg rounded-3xl p-8 shadow-2xl space-y-6">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+              <div>
+                <h3 className="text-xl font-black text-rose-600">Deny Application</h3>
+                <p className="text-xs text-slate-500 font-bold mt-0.5">{activeModal.candidate.name} • {activeModal.candidate.role}</p>
+              </div>
+              <button onClick={() => setActiveModal(null)} className="p-2 hover:bg-slate-100 rounded-xl">
+                <SafeIcon icon={FiX} className="text-slate-400" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-black text-slate-400 uppercase tracking-wider block mb-2">Disposition Reason (Required for EEOC compliance)</label>
+                <select
+                  value={dispositionReason}
+                  onChange={(e) => setDispositionReason(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-rose-500 font-bold text-sm"
+                >
+                  <option value="Skill Match">Skill Match / Technical Background</option>
+                  <option value="Experience Level">Experience Level Not Aligned</option>
+                  <option value="Interview Rubric Score">Interview Rubric Score</option>
+                  <option value="Position Filled">Position Already Filled</option>
+                  <option value="Candidate Withdrew">Candidate Withdrew</option>
+                  <option value="Location / Authorization">Location / Work Authorization</option>
+                </select>
+              </div>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Denying this application will mark it as "Archived / Closed" and record the disposition reason in the immutable audit trail.
+              </p>
+            </div>
+
+            <div className="flex gap-3 pt-4 border-t border-slate-100">
+              <button onClick={() => setActiveModal(null)} className="flex-1 py-3 text-xs font-black uppercase text-slate-500 hover:bg-slate-100 rounded-xl">
+                Cancel
+              </button>
+              <button onClick={handleConfirmDeny} className="flex-1 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-md">
+                Confirm Deny
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };

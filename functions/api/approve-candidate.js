@@ -21,33 +21,74 @@ export async function onRequestPost({ request, env }) {
       return errorResponse("Missing required fields", "MISSING_FIELDS", 400, headers);
     }
 
-    const isApproved = payload.decision === 'approve' || payload.decision === 'approved';
-    const newStage = isApproved ? (payload.stage || 'Video Assessment') : 'Archived / Closed';
-    const newStatus = isApproved ? 'approved' : 'rejected';
+    const decision = String(payload.decision || '').toLowerCase();
+    const isApproved = decision === 'approve' || decision === 'approved';
+    const isHold = decision === 'hold' || decision === 'held';
+    
+    let newStage = 'Archived / Closed';
+    let newStatus = 'rejected';
+    
+    if (isApproved) {
+      newStage = payload.stage || 'Video Assessment';
+      newStatus = 'approved';
+    } else if (isHold) {
+      newStage = 'On Hold';
+      newStatus = 'on_hold';
+    }
 
     if (env.SUPABASE_URL && env.SUPABASE_SERVICE_KEY) {
       const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_KEY);
 
       const { data: candidate, error: fetchError } = await supabase
         .from('onboard1_candidates')
-        .select('id, status, stage')
+        .select('id, status, stage, email, name')
         .eq('id', payload.candidateId)
         .single();
 
       if (fetchError || !candidate) {
-        console.warn("Candidate not found in DB, proceeding with optimistic approval:", payload.candidateId);
+        console.warn("Candidate not found in DB, proceeding with optimistic update:", payload.candidateId);
       } else {
+        const updatePayload = {
+          status: newStatus,
+          stage: newStage,
+          updated_at: new Date().toISOString()
+        };
+
+        if (isHold && payload.holdReason) {
+          updatePayload.hold_reason = payload.holdReason;
+          if (payload.holdUntil) {
+            updatePayload.hold_until = payload.holdUntil;
+          }
+        } else if (!isApproved && !isHold && payload.dispositionReason) {
+          updatePayload.disposition_reason = payload.dispositionReason;
+        }
+
         const { error: updateError } = await supabase
           .from('onboard1_candidates')
-          .update({
-            status: newStatus,
-            stage: newStage
-          })
+          .update(updatePayload)
           .eq('id', payload.candidateId);
 
         if (updateError) {
           console.error("Supabase update error:", updateError);
           return errorResponse("Failed to update candidate status", "DB_ERROR", 500, headers);
+        }
+
+        // Log to api_usage_logs for audit stream
+        try {
+          await supabase.from('api_usage_logs').insert([{
+            endpoint: '/api/approve-candidate',
+            method: 'POST',
+            status: 200,
+            event_type: `candidate_${newStatus}`,
+            details: {
+              candidate_id: payload.candidateId,
+              decision,
+              stage: newStage,
+              reason: payload.holdReason || payload.dispositionReason || null
+            }
+          }]);
+        } catch (logErr) {
+          console.warn("Audit log insert deferred:", logErr.message);
         }
       }
     }
@@ -68,8 +109,9 @@ export async function onRequestPost({ request, env }) {
       }
     }
 
+    const actionText = isApproved ? 'approved' : isHold ? 'placed on hold' : 'rejected';
     return successResponse({
-      message: `Candidate ${isApproved ? 'approved' : 'rejected'} successfully`,
+      message: `Candidate ${actionText} successfully`,
       stage: newStage,
       status: newStatus
     }, 200, headers);

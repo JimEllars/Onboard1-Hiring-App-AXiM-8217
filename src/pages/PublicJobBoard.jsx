@@ -65,6 +65,10 @@ const PublicJobBoard = () => {
 
   const filteredJobs = useMemo(() => {
     return jobsList.filter(j => {
+      const isExpired = j.duration_type === 'fixed_duration' && j.expires_at && new Date(j.expires_at) < new Date();
+      const isActive = (j.status === 'Active' || !j.status) && !isExpired;
+      if (!isActive) return false;
+
       const matchSearch = j.title.toLowerCase().includes(search.toLowerCase()) ||
                           (j.dept && j.dept.toLowerCase().includes(search.toLowerCase())) ||
                           (j.description && j.description.toLowerCase().includes(search.toLowerCase()));

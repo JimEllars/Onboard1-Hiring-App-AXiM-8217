@@ -82,4 +82,25 @@ Successfully implemented dynamic workflow step building and organizational quota
   - Verified clean `npm run lint` with 0 warnings/errors.
   - Verified production build output (`npm run build`) via Vite compiler.
 
-
+### Sprint 3.7 Internal Functionality & Campaign Automations
+- **Job Posting Lifecycles & Renewal Strategy**:
+  - Implemented configurable job posting durations: Indefinite, Fixed Duration (14, 30, 60, 90 days), and Auto-Renewing cycles (14, 30, 60 days).
+  - Enhanced `src/pages/Jobs.jsx` and `src/pages/JobDetails.jsx` with duration badges, expiration countdowns, and inline "Renew Listing" actions (`renewJob`).
+  - Added filter in `src/pages/PublicJobBoard.jsx` to prevent expired or paused listings from displaying to applicants.
+  - Added schema migrations to `supabase/schema.sql` (`duration_type`, `expires_at`, `renewal_interval_days`, `auto_renew`, `workflow_template`, `campaign_id`).
+- **Real-Time Application Intake & Triage Dashboard**:
+  - Added "Application Intake & Triage Feed" to `src/pages/Dashboard.jsx` providing recruiters with instant 1-click **Approve**, **Hold**, and **Deny** controls.
+  - Added interactive modals for:
+    - **Hold Candidate**: Set customizable hold reason and review period (7, 14, 30 days) without distorting rejection compliance metrics.
+    - **Deny Application**: Enforce EEOC-compliant adverse action dispositions with audit trail tracking.
+  - Added `'On Hold'` stage into canonical pipeline across `src/pages/Candidates.jsx` (List and Kanban views), `src/pages/CandidateEvaluation.jsx`, and `src/hooks/useOnboardData.js`.
+  - Updated backend endpoint `functions/api/approve-candidate.js` to handle `approve`, `hold`, and `reject` decisions with logging to `public.api_usage_logs`.
+- **Campaign-Linked Automation Engine**:
+  - Overhauled `src/pages/AutomationSettings.jsx` with multi-campaign targeting (Global Pipeline, Enterprise Outbound Sales, Engineering Specialized, Executive Suite).
+  - Configured 7 comprehensive automated workflows (Fit survey dispatch, async video assessment invite, hold expiration timer, EEOC disposition archival, job listing auto-renewal daemon, 48h stagnation watchdog, and Checkr/Offer provisioning).
+  - Implemented "New Campaign Automation" builder modal to configure trigger events, campaign associations, and target actions.
+  - Added instant "Run Now" execution simulation with live telemetry audit history logging.
+  - Added `onboard1_campaign_automations` database definition to `supabase/schema.sql`.
+- **Enterprise Build & Code Quality**:
+  - Verified clean `npm run lint` with 0 warnings/errors.
+  - Verified production build output (`npm run build`) via Vite compiler.

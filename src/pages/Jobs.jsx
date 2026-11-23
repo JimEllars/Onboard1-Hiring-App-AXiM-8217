@@ -5,7 +5,10 @@ import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 import { useOnboardData } from '../hooks/useOnboardData';
 
-const { FiLink, FiCopy, FiPlus, FiMapPin, FiClock, FiUsers, FiMoreVertical, FiX, FiCheck, FiChevronRight, FiBriefcase, FiDollarSign } = FiIcons;
+const { 
+  FiLink, FiCopy, FiPlus, FiMapPin, FiClock, FiUsers, FiMoreVertical, 
+  FiX, FiCheck, FiChevronRight, FiBriefcase, FiDollarSign, FiCalendar, FiRefreshCw, FiRepeat 
+} = FiIcons;
 
 const CreateJobModal = ({ isOpen, onClose, onPublish }) => {
   const [step, setStep] = useState(1);
@@ -16,7 +19,11 @@ const CreateJobModal = ({ isOpen, onClose, onPublish }) => {
     type: 'Full-time',
     salary: '',
     description: '',
-    workflowTemplate: 'Standard Employee'
+    workflowTemplate: 'Standard Employee',
+    duration_type: 'indefinite', // 'indefinite', 'fixed_duration', 'auto_renew'
+    duration_days: 30,
+    renewal_interval_days: 14,
+    auto_renew: false
   });
 
   if (!isOpen) return null;
@@ -34,7 +41,7 @@ const CreateJobModal = ({ isOpen, onClose, onPublish }) => {
         <div className="p-10 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
           <div>
             <h2 className="text-2xl font-black text-slate-900 tracking-tight">Create New Position</h2>
-            <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">Step {step} of 3: {step === 1 ? 'Basics' : step === 2 ? 'Details' : 'Confirm'}</p>
+            <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">Step {step} of 3: {step === 1 ? 'Basics' : step === 2 ? 'Details & Duration' : 'Confirm'}</p>
           </div>
           <button onClick={onClose} className="p-3 hover:bg-white rounded-2xl transition-all shadow-sm">
             <SafeIcon icon={FiX} className="text-2xl text-slate-400" />
@@ -67,6 +74,8 @@ const CreateJobModal = ({ isOpen, onClose, onPublish }) => {
                       <option>Design</option>
                       <option>Marketing</option>
                       <option>Sales</option>
+                      <option>People & Talent</option>
+                      <option>Operations</option>
                     </select>
                   </div>
                 </div>
@@ -77,7 +86,7 @@ const CreateJobModal = ({ isOpen, onClose, onPublish }) => {
                       <SafeIcon icon={FiMapPin} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                       <input 
                         type="text" 
-                        placeholder="e.g. San Francisco, CA" 
+                        placeholder="e.g. San Francisco, CA or Remote" 
                         value={formData.location}
                         onChange={(e) => setFormData({...formData, location: e.target.value})}
                         className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-500 font-bold transition-all" 
@@ -107,23 +116,113 @@ const CreateJobModal = ({ isOpen, onClose, onPublish }) => {
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Role Description</label>
                 <textarea 
-                  rows="6" 
+                  rows="4" 
                   placeholder="Describe the mission, responsibilities, and impact of this role..." 
                   value={formData.description}
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
                   className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-500 font-bold transition-all resize-none"
                 ></textarea>
               </div>
+
               <div className="grid grid-cols-3 gap-3">
                 {['Full-time', 'Contract', 'Part-time'].map(type => (
                   <button 
                     key={type} 
                     onClick={() => setFormData({...formData, type})}
-                    className={`py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest border transition-all ${formData.type === type ? 'bg-slate-900 text-white border-slate-900 shadow-xl' : 'bg-slate-50 text-slate-500 border-slate-200 hover:border-blue-500'}`}
+                    className={`py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest border transition-all ${formData.type === type ? 'bg-slate-900 text-white border-slate-900 shadow-xl' : 'bg-slate-50 text-slate-500 border-slate-200 hover:border-blue-500'}`}
                   >
                     {type}
                   </button>
                 ))}
+              </div>
+
+              {/* Posting Duration & Renewal Policy Section */}
+              <div className="p-6 bg-slate-50 rounded-3xl border border-slate-200/80 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                      <SafeIcon icon={FiCalendar} className="text-blue-600" /> Posting Duration &amp; Renewal Policy
+                    </label>
+                    <p className="text-[11px] text-slate-500 font-medium">Control whether this job listing runs continuously, has a fixed expiration, or auto-renews.</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {[
+                    { id: 'indefinite', label: 'Indefinite', desc: 'Continuous open listing', icon: FiClock },
+                    { id: 'fixed_duration', label: 'Fixed Duration', desc: 'Closes after set days', icon: FiCalendar },
+                    { id: 'auto_renew', label: 'Auto-Renewing', desc: 'Renews every cycle', icon: FiRepeat },
+                  ].map(policy => (
+                    <button
+                      key={policy.id}
+                      type="button"
+                      onClick={() => {
+                        setFormData({
+                          ...formData,
+                          duration_type: policy.id,
+                          auto_renew: policy.id === 'auto_renew'
+                        });
+                      }}
+                      className={`p-4 rounded-2xl border text-left transition-all ${
+                        formData.duration_type === policy.id
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-100'
+                          : 'bg-white text-slate-700 border-slate-200 hover:border-blue-400'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 font-black text-xs uppercase tracking-wider mb-1">
+                        <SafeIcon icon={policy.icon} />
+                        {policy.label}
+                      </div>
+                      <p className={`text-[10px] font-medium leading-tight ${formData.duration_type === policy.id ? 'text-blue-100' : 'text-slate-400'}`}>
+                        {policy.desc}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+
+                {formData.duration_type === 'fixed_duration' && (
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="pt-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Duration Before Closing</label>
+                    <div className="grid grid-cols-4 gap-2">
+                      {[14, 30, 60, 90].map(days => (
+                        <button
+                          key={days}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, duration_days: days })}
+                          className={`py-2.5 rounded-xl text-xs font-black transition-all border ${
+                            formData.duration_days === days
+                              ? 'bg-slate-900 text-white border-slate-900'
+                              : 'bg-white text-slate-700 border-slate-200 hover:border-slate-400'
+                          }`}
+                        >
+                          {days} Days
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+
+                {formData.duration_type === 'auto_renew' && (
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="pt-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Renewal Cadence</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[14, 30, 60].map(interval => (
+                        <button
+                          key={interval}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, renewal_interval_days: interval, auto_renew: true })}
+                          className={`py-2.5 rounded-xl text-xs font-black transition-all border ${
+                            formData.renewal_interval_days === interval
+                              ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
+                              : 'bg-white text-slate-700 border-slate-200 hover:border-slate-400'
+                          }`}
+                        >
+                          Every {interval} Days
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
               </div>
 
               <div className="space-y-2 pt-2">
@@ -144,15 +243,26 @@ const CreateJobModal = ({ isOpen, onClose, onPublish }) => {
           )}
 
           {step === 3 && (
-            <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="text-center py-10">
-              <div className="w-24 h-24 bg-emerald-50 text-emerald-600 rounded-[32px] flex items-center justify-center mx-auto mb-8 shadow-xl shadow-emerald-50 border border-emerald-100">
-                <SafeIcon icon={FiCheck} className="text-5xl" />
+            <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="text-center py-6">
+              <div className="w-20 h-20 bg-emerald-50 text-emerald-600 rounded-[28px] flex items-center justify-center mx-auto mb-6 shadow-xl shadow-emerald-50 border border-emerald-100">
+                <SafeIcon icon={FiCheck} className="text-4xl" />
               </div>
-              <h3 className="text-3xl font-black text-slate-900 mb-4 tracking-tight">Ready to Go Live?</h3>
-              <p className="text-slate-500 font-medium max-w-sm mx-auto leading-relaxed">This position will be published to your Career Page and synced with LinkedIn & Indeed.</p>
-              <div className="mt-8 p-6 bg-slate-50 rounded-3xl border border-slate-100 text-left space-y-2">
-                <p className="text-lg font-black text-slate-900">{formData.title}</p>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{formData.dept} • {formData.location}</p>
+              <h3 className="text-2xl font-black text-slate-900 mb-2 tracking-tight">Ready to Go Live?</h3>
+              <p className="text-slate-500 text-sm font-medium max-w-sm mx-auto leading-relaxed">This position will be published immediately to your internal careers portal and candidate intake pipelines.</p>
+              
+              <div className="mt-6 p-6 bg-slate-50 rounded-3xl border border-slate-100 text-left space-y-3">
+                <div>
+                  <p className="text-lg font-black text-slate-900">{formData.title || 'Untitled Role'}</p>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{formData.dept} • {formData.location} • {formData.type}</p>
+                </div>
+                <div className="pt-3 border-t border-slate-200 flex flex-wrap gap-2">
+                  <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-xl text-[10px] font-black uppercase tracking-wider">
+                    {formData.duration_type === 'indefinite' ? 'Posting: Indefinite' : formData.duration_type === 'auto_renew' ? `Auto-Renews Every ${formData.renewal_interval_days} Days` : `Duration: ${formData.duration_days} Days`}
+                  </span>
+                  <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-xl text-[10px] font-black uppercase tracking-wider">
+                    Pipeline: {formData.workflowTemplate}
+                  </span>
+                </div>
               </div>
             </motion.div>
           )}
@@ -183,8 +293,9 @@ const CreateJobModal = ({ isOpen, onClose, onPublish }) => {
 };
 
 const Jobs = () => {
-  const { jobs, addJob } = useOnboardData();
+  const { jobs, addJob, renewJob } = useOnboardData();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [renewToast, setRenewToast] = useState(null);
   const navigate = useNavigate();
   const [isSuperUser, setIsSuperUser] = useState(false); // Toggle for demo purposes
 
@@ -192,8 +303,68 @@ const Jobs = () => {
   const currentBoards = jobs.length;
   const canCreateBoard = isSuperUser || currentBoards < maxBoards;
 
+  const handleRenewJob = async (e, jobId, title) => {
+    e.stopPropagation();
+    await renewJob(jobId);
+    setRenewToast(`Position "${title}" renewed successfully! Expiration cycle extended.`);
+    setTimeout(() => setRenewToast(null), 4000);
+  };
+
+  const getDurationInfo = (job) => {
+    if (job.duration_type === 'auto_renew') {
+      const interval = job.renewal_interval_days || 14;
+      return {
+        badge: `Auto-Renews (${interval}d cycle)`,
+        color: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        icon: FiRepeat,
+        canRenew: true
+      };
+    }
+    if (job.duration_type === 'fixed_duration') {
+      if (job.expires_at) {
+        const diffMs = new Date(job.expires_at) - new Date();
+        const diffDays = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+        return {
+          badge: diffDays > 0 ? `Closes in ${diffDays}d` : 'Expired',
+          color: diffDays > 0 ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-rose-50 text-rose-700 border-rose-200',
+          icon: FiCalendar,
+          canRenew: true
+        };
+      }
+      return {
+        badge: 'Fixed Duration',
+        color: 'bg-amber-50 text-amber-700 border-amber-200',
+        icon: FiCalendar,
+        canRenew: true
+      };
+    }
+    return {
+      badge: 'Indefinite Posting',
+      color: 'bg-blue-50 text-blue-700 border-blue-200',
+      icon: FiClock,
+      canRenew: false
+    };
+  };
+
   return (
     <div className="space-y-8 pb-20">
+      {renewToast && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0 }}
+          className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl flex items-center justify-between font-bold text-sm shadow-sm"
+        >
+          <div className="flex items-center gap-2">
+            <SafeIcon icon={FiCheck} className="text-emerald-600 text-lg" />
+            <span>{renewToast}</span>
+          </div>
+          <button onClick={() => setRenewToast(null)} className="text-emerald-500 hover:text-emerald-800">
+            <SafeIcon icon={FiX} />
+          </button>
+        </motion.div>
+      )}
+
       {/* Board/Campaign Hierarchy Section */}
       <div className="bg-slate-900 text-white p-8 rounded-[32px] flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-xl relative overflow-hidden">
         <div className="relative z-10">
@@ -216,7 +387,7 @@ const Jobs = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
           <h2 className="text-3xl font-black text-slate-900 tracking-tight">Job Management</h2>
-          <p className="text-slate-500 mt-1 font-medium">Create, publish, and manage your organization's open positions.</p>
+          <p className="text-slate-500 mt-1 font-medium">Create, publish, and manage your organization's open positions with custom duration and renewal lifecycles.</p>
         </div>
         <button 
           onClick={() => { if(canCreateBoard) setIsModalOpen(true); }}
@@ -228,89 +399,107 @@ const Jobs = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {jobs.map((job, index) => (
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }} 
-            animate={{ opacity: 1, scale: 1 }} 
-            transition={{ delay: index * 0.05 }} 
-            key={job.id} 
-            className="bg-white rounded-[40px] p-10 shadow-sm border border-slate-100 hover:shadow-2xl hover:border-blue-500 transition-all relative group flex flex-col"
-          >
-            <button className="absolute top-8 right-8 text-slate-300 hover:text-slate-900 p-2.5 hover:bg-slate-50 rounded-xl transition-all">
-              <SafeIcon icon={FiMoreVertical} className="text-xl" />
-            </button>
-            
-            <div className="mb-8">
+        {jobs.map((job, index) => {
+          const durationInfo = getDurationInfo(job);
+          return (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }} 
+              animate={{ opacity: 1, scale: 1 }} 
+              transition={{ delay: index * 0.05 }} 
+              key={job.id} 
+              className="bg-white rounded-[40px] p-10 shadow-sm border border-slate-100 hover:shadow-2xl hover:border-blue-500 transition-all relative group flex flex-col"
+            >
+              <div className="mb-8">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex flex-wrap gap-2 items-center">
+                    <span className={`inline-block px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest border ${job.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-amber-50 text-amber-700 border-amber-100'}`}>
+                      {job.status === 'Active' ? 'Active' : 'Paused'}
+                    </span>
+                    <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest border ${durationInfo.color}`}>
+                      <SafeIcon icon={durationInfo.icon} className="text-[11px]" />
+                      {durationInfo.badge}
+                    </span>
+                  </div>
 
-              <div className="flex justify-between items-start mb-6">
-                <span className={`inline-block px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border ${job.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-amber-50 text-amber-700 border-amber-100'}`}>
-                  {job.status === 'Active' ? 'Active' : 'Paused'}
-                </span>
-
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const isProduction = typeof window !== 'undefined' && window.location.hostname.includes('axim.us.com');
-                    const url = isProduction ? `https://jobs.axim.us.com?ref=EMP123` : `${window.location.origin}/jobs?ref=EMP123`;
-                    navigator.clipboard.writeText(url);
-                    const btn = e.currentTarget;
-                    const originalHTML = btn.innerHTML;
-                    btn.innerHTML = `<span class="flex items-center gap-2"><svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Copied</span>`;
-                    btn.classList.add('text-emerald-600', 'bg-emerald-50');
-                    setTimeout(() => {
-                      btn.innerHTML = originalHTML;
-                      btn.classList.remove('text-emerald-600', 'bg-emerald-50');
-                    }, 2000);
-                  }}
-                  className="px-3 py-1.5 bg-slate-50 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg text-[10px] font-bold uppercase flex items-center gap-1.5 transition-all"
-                >
-                  <SafeIcon icon={FiLink} /> Share
-                </button>
-              </div>
-
-              <h3 className="text-2xl font-black text-slate-900 leading-tight mb-2 group-hover:text-blue-600 transition-colors">{job.title}</h3>
-              <p className="text-sm text-slate-500 font-bold uppercase tracking-tighter">{job.dept}</p>
-            </div>
-
-            <div className="space-y-4 mb-10 flex-1">
-              <div className="flex items-center text-sm font-bold text-slate-500">
-                <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center mr-4 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
-                  <SafeIcon icon={FiMapPin} />
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const isProduction = typeof window !== 'undefined' && window.location.hostname.includes('axim.us.com');
+                      const url = isProduction ? `https://jobs.axim.us.com?ref=EMP123` : `${window.location.origin}/jobs?ref=EMP123`;
+                      navigator.clipboard.writeText(url);
+                      const btn = e.currentTarget;
+                      const originalHTML = btn.innerHTML;
+                      btn.innerHTML = `<span class="flex items-center gap-2"><svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Copied</span>`;
+                      btn.classList.add('text-emerald-600', 'bg-emerald-50');
+                      setTimeout(() => {
+                        btn.innerHTML = originalHTML;
+                        btn.classList.remove('text-emerald-600', 'bg-emerald-50');
+                      }, 2000);
+                    }}
+                    className="px-3 py-1.5 bg-slate-50 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg text-[10px] font-bold uppercase flex items-center gap-1.5 transition-all"
+                  >
+                    <SafeIcon icon={FiLink} /> Share
+                  </button>
                 </div>
-                {job.location}
-              </div>
-              <div className="flex items-center text-sm font-bold text-slate-500">
-                <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center mr-4 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
-                  <SafeIcon icon={FiClock} />
-                </div>
-                {job.type}
-              </div>
-            </div>
 
-            <div className="pt-8 border-t border-slate-50 flex items-center justify-between">
-              <div className="flex items-center">
-                <div className="flex -space-x-3 mr-4">
-                  {[1, 2, 3].map(i => (
-                    <img key={i} src={`https://i.pravatar.cc/100?img=${i + 10}`} className="w-10 h-10 rounded-xl border-4 border-white object-cover shadow-sm" alt="Candidate" />
-                  ))}
-                  <div className="w-10 h-10 rounded-xl bg-slate-900 border-4 border-white flex items-center justify-center text-[10px] font-black text-white shadow-sm">
-                    {job.candidates > 3 ? `+${job.candidates - 3}` : job.candidates}
+                <h3 className="text-2xl font-black text-slate-900 leading-tight mb-2 group-hover:text-blue-600 transition-colors">{job.title}</h3>
+                <p className="text-sm text-slate-500 font-bold uppercase tracking-tighter">{job.dept} • {job.workflowTemplate || 'Standard Pipeline'}</p>
+              </div>
+
+              <div className="space-y-4 mb-6 flex-1">
+                <div className="flex items-center text-sm font-bold text-slate-500">
+                  <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center mr-4 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                    <SafeIcon icon={FiMapPin} />
+                  </div>
+                  {job.location}
+                </div>
+                <div className="flex items-center text-sm font-bold text-slate-500">
+                  <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center mr-4 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                    <SafeIcon icon={FiClock} />
+                  </div>
+                  {job.type}
+                </div>
+              </div>
+
+              {durationInfo.canRenew && (
+                <div className="mb-6 pt-3 border-t border-slate-100 flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Listing Lifecycle</span>
+                  <button
+                    onClick={(e) => handleRenewJob(e, job.id, job.title)}
+                    className="px-3 py-1 bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-600 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1 transition-all border border-blue-200"
+                    title="Extend listing expiration by one renewal cycle"
+                  >
+                    <SafeIcon icon={FiRefreshCw} className="text-xs" /> Renew Listing
+                  </button>
+                </div>
+              )}
+
+              <div className="pt-6 border-t border-slate-50 flex items-center justify-between">
+                <div className="flex items-center">
+                  <div className="flex -space-x-3 mr-4">
+                    {[1, 2, 3].map(i => (
+                      <img key={i} src={`https://i.pravatar.cc/100?img=${i + 10}`} className="w-10 h-10 rounded-xl border-4 border-white object-cover shadow-sm" alt="Candidate" />
+                    ))}
+                    <div className="w-10 h-10 rounded-xl bg-slate-900 border-4 border-white flex items-center justify-center text-[10px] font-black text-white shadow-sm">
+                      {job.candidates > 3 ? `+${job.candidates - 3}` : job.candidates}
+                    </div>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-lg font-black text-slate-900 leading-none">{job.candidates}</span>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Applicants</span>
                   </div>
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-lg font-black text-slate-900 leading-none">{job.candidates}</span>
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Applicants</span>
-                </div>
+                <button 
+                  onClick={() => navigate(`/portal/jobs/${job.id}`)} 
+                  className="w-12 h-12 bg-slate-50 text-slate-900 rounded-2xl flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                  title="View Job Details & Lifecycle"
+                >
+                  <SafeIcon icon={FiChevronRight} className="text-xl" />
+                </button>
               </div>
-              <button 
-                onClick={() => navigate(`/portal/jobs/${job.id}`)} 
-                className="w-12 h-12 bg-slate-50 text-slate-900 rounded-2xl flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all shadow-sm"
-              >
-                <SafeIcon icon={FiChevronRight} className="text-xl" />
-              </button>
-            </div>
-          </motion.div>
-        ))}
+            </motion.div>
+          );
+        })}
 
         <button 
           onClick={() => { if(canCreateBoard) setIsModalOpen(true); }}

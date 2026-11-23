@@ -8,9 +8,9 @@ import { logEvent, TELEMETRY_EVENTS } from '../lib/telemetry';
 
 const { FiSearch, FiFilter, FiDownload, FiStar, FiMail, FiX, FiFile, FiPhone, FiExternalLink, FiGrid, FiList, FiEdit, FiBarChart2, FiActivity, FiChevronRight } = FiIcons;
 
-const stages = ['Applied', 'Fit Survey', 'Video Assessment', 'Live Interview', 'Screening/Checkr', 'Offer / E-Sign', 'Hired', 'Archived / Closed'];
+const stages = ['Applied', 'Screening', 'On Hold', 'Fit Survey', 'Video Assessment', 'Live Interview', 'Screening/Checkr', 'Offer / E-Sign', 'Hired', 'Archived / Closed'];
 
-const CandidateDetails = ({ candidate, onClose, onEvaluate, onViewScores, onViewProgress, onMoveStage, onApprove, onReject }) => {
+const CandidateDetails = ({ candidate, onClose, onEvaluate, onViewScores, onViewProgress, onMoveStage, onApprove, onHold, onReject }) => {
   if (!candidate) return null;
 
   const nextStage = stages[stages.indexOf(candidate.stage) + 1] || (candidate.stage === 'Screening' ? 'Video Assessment' : null);
@@ -117,48 +117,42 @@ const CandidateDetails = ({ candidate, onClose, onEvaluate, onViewScores, onView
           </section>
         </div>
 
-        <div className="sticky bottom-0 pt-10 pb-4 bg-white border-t border-slate-100 mt-10 flex gap-4">
-          {candidate.stage === 'Screening' ? (
-            <>
-              <button
-                onClick={() => {
-                  onApprove(candidate.id);
-                  onClose();
-                }}
-                className="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-black text-sm hover:bg-blue-700 transition-all shadow-xl shadow-blue-200 flex items-center justify-center gap-2"
-              >
-                Approve (Video Assessment)
-              </button>
-              <button
-                onClick={() => {
-                  onReject(candidate.id);
-                  onClose();
-                }}
-                className="px-8 py-4 bg-rose-50 text-rose-600 rounded-2xl font-black text-sm hover:bg-rose-100 transition-all border border-rose-100"
-              >
-                Reject
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                disabled={!nextStage}
-                onClick={() => onMoveStage(candidate.id, nextStage)}
-                className="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-black text-sm hover:bg-blue-600 transition-all shadow-xl shadow-slate-200 disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                Move to {nextStage || 'End'} <SafeIcon icon={FiChevronRight} />
-              </button>
-              <button
-                onClick={() => {
-                  onReject(candidate.id);
-                  onClose();
-                }}
-                className="px-8 py-4 bg-rose-50 text-rose-600 rounded-2xl font-black text-sm hover:bg-rose-100 transition-all border border-rose-100"
-              >
-                Reject
-              </button>
-            </>
+        <div className="sticky bottom-0 pt-10 pb-4 bg-white border-t border-slate-100 mt-10 flex flex-wrap gap-3">
+          <button
+            onClick={() => {
+              onApprove(candidate.id);
+              onClose();
+            }}
+            className="flex-1 min-w-[140px] bg-emerald-600 text-white py-3.5 rounded-2xl font-black text-xs uppercase tracking-wider hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-100 flex items-center justify-center gap-1.5"
+          >
+            <SafeIcon icon={FiIcons.FiCheck} /> Approve
+          </button>
+          <button
+            onClick={() => {
+              onHold(candidate.id);
+              onClose();
+            }}
+            className="px-6 py-3.5 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-2xl font-black text-xs uppercase tracking-wider transition-all border border-amber-200"
+          >
+            Hold
+          </button>
+          {nextStage && candidate.stage !== 'Screening' && candidate.stage !== 'On Hold' && (
+            <button
+              onClick={() => onMoveStage(candidate.id, nextStage)}
+              className="px-5 py-3.5 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-wider hover:bg-blue-600 transition-all shadow-md flex items-center justify-center gap-1"
+            >
+              Advance <SafeIcon icon={FiChevronRight} />
+            </button>
           )}
+          <button
+            onClick={() => {
+              onReject(candidate.id);
+              onClose();
+            }}
+            className="px-6 py-3.5 bg-rose-50 text-rose-600 rounded-2xl font-black text-xs uppercase tracking-wider hover:bg-rose-100 transition-all border border-rose-100"
+          >
+            Deny
+          </button>
         </div>
       </div>
     </motion.div>
@@ -166,7 +160,7 @@ const CandidateDetails = ({ candidate, onClose, onEvaluate, onViewScores, onView
 };
 
 const Candidates = () => {
-  const { candidates, updateCandidateStage, approveCandidate } = useOnboardData();
+  const { candidates, updateCandidateStage, approveCandidate, holdCandidate, rejectCandidate } = useOnboardData();
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [viewMode, setViewMode] = useState('list');
   const [search, setSearch] = useState('');
@@ -257,6 +251,7 @@ const Candidates = () => {
                     <td className="py-6 px-10">
                       <span className={`inline-flex items-center px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border ${
                         candidate.stage === 'Hired' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
+                        candidate.stage === 'On Hold' ? 'bg-amber-50 text-amber-700 border-amber-200' :
                         candidate.stage === 'Offer / E-Sign' || candidate.stage === 'Offer' ? 'bg-amber-50 text-amber-700 border-amber-100' : 
                         candidate.stage === 'Live Interview' || candidate.stage === 'Interview' ? 'bg-purple-50 text-purple-700 border-purple-100' : 
                         candidate.stage === 'Archived / Closed' ? 'bg-rose-50 text-rose-700 border-rose-100' :
@@ -350,8 +345,9 @@ const Candidates = () => {
               onViewScores={(id) => navigate(`/portal/candidates/${id}/scores`)} 
               onViewProgress={(id) => navigate(`/portal/candidates/${id}/progress`)}
               onMoveStage={handleMoveStage}
-              onApprove={(id) => approveCandidate(id, 'approved')}
-              onReject={(id) => approveCandidate(id, 'rejected')}
+              onApprove={(id) => { approveCandidate(id, 'Video Assessment'); setSelectedCandidate(null); }}
+              onHold={(id) => { holdCandidate(id, 'Placed on hold by recruiter review'); setSelectedCandidate(null); }}
+              onReject={(id) => { rejectCandidate(id, 'Qualifications not aligned with current opening'); setSelectedCandidate(null); }}
             />
           </>
         )}

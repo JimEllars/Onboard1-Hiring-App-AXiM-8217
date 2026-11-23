@@ -182,9 +182,13 @@ const CandidateEvaluation = () => {
       let nextStage = 'Live Interview';
       if (recommendation === 'hire') nextStage = 'Offer / E-Sign';
       else if (recommendation === 'reject') nextStage = 'Archived / Closed';
+      else if (recommendation === 'hold') nextStage = 'On Hold';
       else if (recommendation === 'maybe') nextStage = 'Screening/Checkr';
 
-      updateCandidateStage(payload.candidateId, nextStage);
+      updateCandidateStage(payload.candidateId, nextStage, {
+        status: recommendation === 'hold' ? 'on_hold' : recommendation === 'reject' ? 'rejected' : 'approved',
+        hold_reason: recommendation === 'hold' ? comment : null
+      });
       logEvent('candidate_stage_progressed', { candidateId: payload.candidateId, newStage: nextStage });
 
       setIsSuccess(true);
@@ -200,9 +204,13 @@ const CandidateEvaluation = () => {
       let nextStage = 'Live Interview';
       if (recommendation === 'hire') nextStage = 'Offer / E-Sign';
       else if (recommendation === 'reject') nextStage = 'Archived / Closed';
+      else if (recommendation === 'hold') nextStage = 'On Hold';
       else if (recommendation === 'maybe') nextStage = 'Screening/Checkr';
 
-      updateCandidateStage(payload.candidateId, nextStage);
+      updateCandidateStage(payload.candidateId, nextStage, {
+        status: recommendation === 'hold' ? 'on_hold' : recommendation === 'reject' ? 'rejected' : 'approved',
+        hold_reason: recommendation === 'hold' ? comment : null
+      });
       setIsSuccess(true);
       setTimeout(() => {
         navigate('/portal/candidates');
@@ -500,23 +508,30 @@ const CandidateEvaluation = () => {
           <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
             <SafeIcon icon={FiAlertCircle} className="text-blue-600" /> Final Recommendation
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {userRole === "Hiring Manager" ? (
               <React.Fragment>
             <button 
               onClick={() => handleSubmit('hire')}
               disabled={isSubmitting || backgroundStatus !== 'clear'}
               title={backgroundStatus !== 'clear' ? "Background check must be cleared before offering" : ""}
-              className="flex items-center justify-center gap-2 px-6 py-4 bg-emerald-600 text-white rounded-2xl font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center justify-center gap-2 px-5 py-4 bg-emerald-600 text-white rounded-2xl font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
               <SafeIcon icon={FiCheck} /> Strong Hire
             </button>
             <button 
               onClick={() => handleSubmit('maybe')}
               disabled={isSubmitting}
-              className="flex items-center justify-center gap-2 px-6 py-4 bg-white border-2 border-slate-200 text-slate-700 rounded-2xl font-bold hover:border-blue-500 hover:text-blue-600 transition-all disabled:opacity-50"
+              className="flex items-center justify-center gap-2 px-5 py-4 bg-white border-2 border-slate-200 text-slate-700 rounded-2xl font-bold hover:border-blue-500 hover:text-blue-600 transition-all disabled:opacity-50 text-sm"
             >
-              Needs Another Round
+              Another Round
+            </button>
+            <button 
+              onClick={() => handleSubmit('hold')}
+              disabled={isSubmitting}
+              className="flex items-center justify-center gap-2 px-5 py-4 bg-amber-50 border-2 border-amber-200 text-amber-700 rounded-2xl font-bold hover:bg-amber-100 transition-all disabled:opacity-50 text-sm"
+            >
+              <SafeIcon icon={FiClock} /> Hold Application
             </button>
             <button 
               onClick={() => {
@@ -527,13 +542,13 @@ const CandidateEvaluation = () => {
                 }
               }}
               disabled={isSubmitting || (showDisposition && !dispositionReason)}
-              className="flex items-center justify-center gap-2 px-6 py-4 bg-red-50 text-red-600 rounded-2xl font-bold hover:bg-red-100 transition-all disabled:opacity-50"
+              className="flex items-center justify-center gap-2 px-5 py-4 bg-red-50 text-red-600 rounded-2xl font-bold hover:bg-red-100 transition-all disabled:opacity-50 text-sm"
             >
               <SafeIcon icon={FiX} /> {showDisposition ? 'Confirm Reject' : 'Do Not Hire'}
             </button>
               </React.Fragment>
             ) : (
-              <div className="col-span-3 text-center text-slate-500 font-bold p-4 bg-white rounded-xl border border-slate-200">Only Hiring Managers can make final decisions.</div>
+              <div className="col-span-4 text-center text-slate-500 font-bold p-4 bg-white rounded-xl border border-slate-200">Only Hiring Managers can make final decisions.</div>
             )}
           </div>
 

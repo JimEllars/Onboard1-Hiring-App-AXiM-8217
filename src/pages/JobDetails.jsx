@@ -12,18 +12,22 @@ const JobDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const userRole = "Admin";
-  const { jobs, updateJob } = useOnboardData();
+  const { jobs, updateJob, renewJob } = useOnboardData();
 
   const targetJob = jobs.find(j => String(j.id) === String(id));
 
   // Merge targetJob with mock data if needed for display purposes
   const job = targetJob ? {
     ...targetJob,
-    postedDate: targetJob.postedDate || 'Oct 12, 2023',
+    postedDate: targetJob.postedDate || 'Oct 12, 2026',
     views: targetJob.views || '12,405',
     applications: targetJob.candidates || '450',
     shortlisted: targetJob.shortlisted || '24',
     avgTimeToHire: targetJob.avgTimeToHire || '18 Days',
+    duration_type: targetJob.duration_type || 'indefinite',
+    renewal_interval_days: targetJob.renewal_interval_days || 30,
+    expires_at: targetJob.expires_at || null,
+    workflowTemplate: targetJob.workflowTemplate || 'Standard Employee',
     description: targetJob.description || "We are looking for an exceptional candidate to join our team and contribute to our core product. You'll be responsible for driving impact and collaborating with cross-functional members.",
     requirements: targetJob.requirements || [
       '5+ years of relevant experience',
@@ -39,7 +43,14 @@ const JobDetails = () => {
     }
   };
 
-    if (!job) {
+  const handleRenew = async () => {
+    if (job) {
+      await renewJob(job.id, job.renewal_interval_days || 30);
+      alert(`Position "${job.title}" renewed! Expiration extended by ${job.renewal_interval_days || 30} days.`);
+    }
+  };
+
+  if (!job) {
     return <div className="p-8 text-center text-slate-500">Job not found</div>;
   }
 
@@ -54,6 +65,21 @@ const JobDetails = () => {
     }]
   };
 
+  const getLifecycleSummary = () => {
+    if (job.duration_type === 'auto_renew') {
+      return `Auto-Renewing Campaign (Every ${job.renewal_interval_days} Days)`;
+    }
+    if (job.duration_type === 'fixed_duration') {
+      if (job.expires_at) {
+        const diffMs = new Date(job.expires_at) - new Date();
+        const diffDays = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+        return diffDays > 0 ? `Fixed Duration (${diffDays} Days Remaining)` : 'Fixed Duration (Expired)';
+      }
+      return 'Fixed Duration';
+    }
+    return 'Indefinite Listing (Continuous Active)';
+  };
+
   return (
     <div className="space-y-6 pb-12">
       <button 
@@ -66,9 +92,12 @@ const JobDetails = () => {
       <div className="bg-white rounded-3xl border border-slate-100 p-8 shadow-sm">
         <div className="flex flex-col lg:flex-row justify-between items-start gap-6">
           <div className="flex-1">
-            <div className="flex items-center gap-3 mb-4">
+            <div className="flex flex-wrap items-center gap-3 mb-4">
               <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-lg text-[10px] font-bold uppercase tracking-wider">
                 {job.status}
+              </span>
+              <span className="px-3 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-[10px] font-bold uppercase tracking-wider">
+                {getLifecycleSummary()}
               </span>
               <span className="text-sm text-slate-400 font-medium">Posted on {job.postedDate}</span>
             </div>
@@ -77,11 +106,19 @@ const JobDetails = () => {
               <span className="flex items-center gap-1"><SafeIcon icon={FiBriefcase} /> {job.dept}</span>
               <span className="flex items-center gap-1"><SafeIcon icon={FiMapPin} /> {job.location}</span>
               <span className="flex items-center gap-1"><SafeIcon icon={FiClock} /> {job.type}</span>
+              <span className="text-blue-600 font-bold text-xs uppercase bg-blue-50 px-2 py-1 rounded">Pipeline: {job.workflowTemplate}</span>
             </div>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             {userRole === "Admin" && (
               <>
+            <button 
+              onClick={handleRenew}
+              title="Renew listing and extend active duration"
+              className="px-4 py-3 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl hover:bg-emerald-100 transition-colors flex items-center gap-2 text-sm font-bold"
+            >
+              Renew Listing (+{job.renewal_interval_days || 30}d)
+            </button>
             <button 
               onClick={() => {
                 const isProduction = typeof window !== 'undefined' && window.location.hostname.includes('axim.us.com');
